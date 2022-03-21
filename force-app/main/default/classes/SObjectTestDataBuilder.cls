@@ -1,4 +1,4 @@
-public abstract class SObjectTestData {
+public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     protected Map<SObjectField, Object> customValueMap;
     private Map<SObjectField, Object> defaultValueMap {
@@ -11,7 +11,7 @@ public abstract class SObjectTestData {
         set;
     }
 
-    public SObjectTestData() {
+    public SObjectTestDataBuilder() {
         customValueMap = new Map<SObjectField, Object>();
     }
 
@@ -23,10 +23,9 @@ public abstract class SObjectTestData {
         return builder;
     }
 
-    protected abstract Map<SObjectField, Object> getDefaultValueMap();
-    protected abstract SObjectType getSObjectType();
+    public abstract SObjectType getSObjectType();
 
-    protected SObjectTestData withData(SObjectField field, Object value) {
+    protected SObjectTestDataBuilder withData(SObjectField field, Object value) {
         this.customValueMap.put(field, value);
         return this;
     }
@@ -53,11 +52,14 @@ public abstract class SObjectTestData {
         return recordsToInsert;
     }
 
+    protected virtual Map<SObjectField, Object> getDefaultValueMap() {
+        return new Map<SObjectField, Object>();
+    }
     protected virtual void beforeInsert(List<SObject> records) {}
     protected virtual void afterInsert(List<SObject> records) {}
 
     private SObject build() {
-        SObject instance = getSObjectType().newSObject(null, true);
+        SObject instance = this.getSObjectType().newSObject(null, true);
 
         for (SObjectField defaultField : defaultValueMap.keySet()) {
             if (!customValueMap.containsKey(defaultField)) {
@@ -77,18 +79,37 @@ public abstract class SObjectTestData {
 
     private class TestDataBuilderCache {
         private Boolean initialized;
+        private Map<SObjectType, ITestDataBuilder> builderByType;
 
         public TestDataBuilderCache() {
             this.initialized = false;
+            this.builderByType = new Map<SObjectType, ITestDataBuilder>();
         }
 
         public ITestDataBuilder getFor(SObjectType objectType) {
             if (this.initialized == false) {
-                // TODO: Query for all test data builder classes and populate the cache
+                initializeCache();
             }
 
-            // TODO: return from cache
-            return null;
+            return this.builderByType.get(objectType);
+        }
+
+        private void initializeCache() {
+            List<ApexClass> testDataBuilderClass = [SELECT Name, NamespacePrefix FROM ApexClass WHERE Name LIKE '%TestDataBuilder%'];
+            for (ApexClass currentClass : testDataBuilderClass) {
+                try {
+                    Type currentClassType = Type.forName(currentClass.NamespacePrefix, currentClass.Name);
+                    Object currentClassInstance = currentClassType.newInstance();
+                    if (currentClassInstance instanceof ITestDataBuilder) {
+                        ITestDataBuilder builderInstance = (ITestDataBuilder)currentClassInstance;
+                        this.builderByType.put(builderInstance.getSObjectType(), builderInstance);
+                    }
+                } catch (Exception e) {
+                    // An error might occur when creating the type. If it does we move on and don't add it to the cache.
+                }
+            }
+
+            this.initialized = true;
         }
     }
 }

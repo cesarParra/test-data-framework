@@ -1,5 +1,5 @@
 @IsTest
-public with sharing class DynamicTestDataBuilder extends SObjectTestData implements ITestDataBuilder {
+public with sharing class DynamicTestDataBuilder extends SObjectTestDataBuilder {
     private static final Boolean DEFAULT_BOOLEAN = false;
     private static final String DEFAULT_TEXT = 'Any Text';
 
@@ -16,14 +16,14 @@ public with sharing class DynamicTestDataBuilder extends SObjectTestData impleme
     }
 
     public SObject getNew() {
-        return super.insertSObject();
+        return this.insertSObject();
     }
 
-    protected override Map<SObjectField, Object> getDefaultValueMap() {
-        return new Map<SObjectField, Object>();
+    public List<SObject> getNew(Integer numberOfRecords) {
+        return this.insertSObjects(numberOfRecords);
     }
 
-    protected override SObjectType getSObjectType() {
+    public override SObjectType getSObjectType() {
         return this.objectType;
     }
 

@@ -1,13 +1,23 @@
 @IsTest
 private class IntegrationTests {
     @IsTest
-    private static void canCreateRecordsWithoutACustomTestDataClass() {
-        Contact anyContact = (Contact)SObjectTestData.of(Contact.SObjectType).getNew();
+    private static void canCreateRecordsWithoutACustomTestDataBuilder() {
+        Contact anyContact = (Contact)SObjectTestDataBuilder.of(Contact.SObjectType).getNew();
         System.assertNotEquals(null, anyContact?.Id, 'Expected a record returned.');
     }
 
-    // can create new
-    // can create through custom test data classes
-    // whether you do it through SObjectTestData and custom test data classes they are complementary
+    @IsTest
+    private static void canCreateRecordsUsingCustomTestDataBuilderWhenItExists() {
+        Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).getNew();
+        System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
+        System.assertEquals('ACME', anyAccount.Name, 'Expected the default name specified in the builder class.');
+    }
+
+    @IsTest
+    private static void canCreateRecordsDirectlyThroughTheirBuilders() {
+        Account anyAccount = new AccountTestDataBuilder().getNew();
+        System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
+    }
+
     // can create with children
 }

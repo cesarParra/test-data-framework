@@ -1,41 +1,4 @@
 {
-  "serverMaxRevisionCounter": 14,
-  "sourceMembers": {
-    "Profile__Admin": {
-      "serverRevisionCounter": 11,
-      "lastRetrievedFromServer": 11,
-      "memberType": "Profile",
-      "isNameObsolete": false
-    },
-    "ApexClass__ITestData": {
-      "serverRevisionCounter": 6,
-      "lastRetrievedFromServer": 2,
-      "memberType": "ApexClass",
-      "isNameObsolete": true
-    },
-    "ApexClass__ITestDataBuilder": {
-      "serverRevisionCounter": 5,
-      "lastRetrievedFromServer": null,
-      "memberType": "ApexClass",
-      "isNameObsolete": false
-    },
-    "ApexClass__DynamicTestDataBuilder": {
-      "serverRevisionCounter": 12,
-      "lastRetrievedFromServer": 12,
-      "memberType": "ApexClass",
-      "isNameObsolete": false
-    },
-    "ApexClass__IntegrationTests": {
-      "serverRevisionCounter": 13,
-      "lastRetrievedFromServer": 13,
-      "memberType": "ApexClass",
-      "isNameObsolete": false
-    },
-    "ApexClass__SObjectTestData": {
-      "serverRevisionCounter": 14,
-      "lastRetrievedFromServer": 14,
-      "memberType": "ApexClass",
-      "isNameObsolete": false
-    }
-  }
+  "serverMaxRevisionCounter": 0,
+  "sourceMembers": {}
 }
