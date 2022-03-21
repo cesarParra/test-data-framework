@@ -3,6 +3,10 @@
     {
       "path": "force-app",
       "default": true
+    },
+    {
+      "path": "unpackaged",
+      "default": false
     }
   ],
   "name": "test-data-framework",

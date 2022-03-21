@@ -1,0 +1,154 @@
+{
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app",
+    "isDirectory": true,
+    "modifiedTime": 1647464288575,
+    "changeTime": 1647464288575,
+    "contentHash": "b28b7af69320201d1cf206ebf28373980add1451",
+    "state": "u",
+    "isArtifactRoot": true,
+    "package": "force-app"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main",
+    "isDirectory": true,
+    "modifiedTime": 1647464288575,
+    "changeTime": 1647464288575,
+    "contentHash": "7505d64a54e061b7acd54ccd58b49dc43500b635",
+    "state": "u",
+    "package": "force-app"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default",
+    "isDirectory": true,
+    "modifiedTime": 1647606370083,
+    "changeTime": 1647606370083,
+    "contentHash": "1adaa84dc07a16d34ede5b9a70713ff832a0f853",
+    "state": "u",
+    "package": "force-app",
+    "deferContentHash": true
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes",
+    "isDirectory": true,
+    "modifiedTime": 1647867589950,
+    "changeTime": 1647867589950,
+    "contentHash": "222bc5e59cb57b454c50bfcea06d495f0025ab81",
+    "state": "u",
+    "package": "force-app",
+    "deferContentHash": true
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework",
+    "isDirectory": true,
+    "modifiedTime": 1647868097043,
+    "changeTime": 1647868097043,
+    "contentHash": "85ee31c1f9ec54d3e17cba85ad436190cbc0904c",
+    "state": "u",
+    "isWorkspace": true,
+    "deferContentHash": true
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\",
+    "isDirectory": true,
+    "modifiedTime": 1647606153825,
+    "changeTime": 1647606153825,
+    "contentHash": "04d13fd0aa6f0197cf2c999019a607c36c81eb9f",
+    "state": "u",
+    "isArtifactRoot": true,
+    "package": "unpackaged"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests",
+    "isDirectory": true,
+    "modifiedTime": 1647868062405,
+    "changeTime": 1647868062405,
+    "contentHash": "d1885fea823f5f9128acdff5a5b7d20710d58002",
+    "state": "u",
+    "package": "unpackaged"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\DynamicTestDataBuilder.cls": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\DynamicTestDataBuilder.cls",
+    "size": 3336,
+    "modifiedTime": 1647868062404,
+    "changeTime": 1647868062404,
+    "contentHash": "f5002fa57a411c08e5cb6c7bbeea0d41b42a00db",
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\DynamicTestDataBuilder.cls-meta.xml": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\DynamicTestDataBuilder.cls-meta.xml",
+    "size": 179,
+    "modifiedTime": 1647867024099,
+    "changeTime": 1647867024099,
+    "contentHash": "aa365ef850ff37984a3f2a5db71be6f5c8391f8d",
+    "isMetadataFile": true,
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\IntegrationTests.cls": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\IntegrationTests.cls",
+    "size": 526,
+    "modifiedTime": 1647867589966,
+    "changeTime": 1647867589966,
+    "contentHash": "2263abd69b03c86666575ef437a8dce479c4594d",
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\IntegrationTests.cls-meta.xml": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\IntegrationTests.cls-meta.xml",
+    "size": 179,
+    "modifiedTime": 1647606180590,
+    "changeTime": 1647606180590,
+    "contentHash": "aa365ef850ff37984a3f2a5db71be6f5c8391f8d",
+    "isMetadataFile": true,
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\SObjectTestData.cls": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\SObjectTestData.cls",
+    "size": 3181,
+    "modifiedTime": 1647867589936,
+    "changeTime": 1647867589936,
+    "contentHash": "853ca31bdec5f51bf414610b5f6670cd9b3e84c6",
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\SObjectTestData.cls-meta.xml": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\unpackaged\\tests\\SObjectTestData.cls-meta.xml",
+    "size": 179,
+    "modifiedTime": 1647606526904,
+    "changeTime": 1647606526904,
+    "contentHash": "aa365ef850ff37984a3f2a5db71be6f5c8391f8d",
+    "isMetadataFile": true,
+    "state": "u",
+    "package": "unpackaged",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes\\ITestDataBuilder.cls": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes\\ITestDataBuilder.cls",
+    "size": 279,
+    "modifiedTime": 1647867589949,
+    "changeTime": 1647867589949,
+    "contentHash": "9603af9e0264949bc2363a90f214b79a3ae931af",
+    "state": "u",
+    "package": "force-app",
+    "metadataType": "ApexClass"
+  },
+  "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes\\ITestDataBuilder.cls-meta.xml": {
+    "sourcePath": "C:\\Users\\cesar\\PersonalProjects\\test-data-framework\\force-app\\main\\default\\classes\\ITestDataBuilder.cls-meta.xml",
+    "size": 179,
+    "modifiedTime": 1647605888427,
+    "changeTime": 1647866648076,
+    "contentHash": "aa365ef850ff37984a3f2a5db71be6f5c8391f8d",
+    "isMetadataFile": true,
+    "state": "u",
+    "package": "force-app",
+    "metadataType": "ApexClass"
+  }
+}
