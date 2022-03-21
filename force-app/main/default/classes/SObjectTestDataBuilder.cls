@@ -1,5 +1,6 @@
 public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
+    private List<ChildRelationship> registeredRelationships;
     protected Map<SObjectField, Object> customValueMap;
     private Map<SObjectField, Object> defaultValueMap {
         get {
@@ -13,14 +14,27 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
 
     public SObjectTestDataBuilder() {
         customValueMap = new Map<SObjectField, Object>();
+        registeredRelationships = new List<ChildRelationship>();
     }
 
+    // TODO: Maybe we can have an "in memory" overload (using an enum) here that allows us to
+    // use this same API but just creating everything in memory. We can use sfab style
+    // of JSON manipulation to create child relationships
+    // sfab style will also allow us to easily populate non-writable fields like formulas
+    // In the overload we can even specify if we want "fake Ids" to be created for us when we are in "in memory mode"
     public static ITestDataBuilder of(SObjectType objectType) {
         ITestDataBuilder builder = builderCache.getFor(objectType);
         if (builder == null) {
             return new DynamicTestDataBuilder(objectType);
         }
         return builder;
+    }
+
+    // TODO: Integration test
+    // TODO: Overload that takes a quantity of records
+    public static SObject buildAny(SObjectType objectType) {
+        // TODO: Build a cache of previously saved records by type, so that we can get it from there
+        return of(objectType).buildNew();
     }
 
     public abstract SObjectType getSObjectType();
@@ -30,12 +44,19 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
         return this;
     }
 
+    protected SObjectTestDataBuilder withChildren(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+        // TODO: Ability to insert many children at a time
+        this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
+        return this;
+    }
+
     protected SObject insertSObject() {
         SObject instance = build();
         customValueMap.clear();
         beforeInsert(new List<SObject> { instance });
         insert instance;
         afterInsert(new List<SObject> { instance });
+        insertChildren(new List<SObject> { instance });
         return instance;
     }
 
@@ -77,6 +98,15 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
         return instance;
     }
 
+    private void insertChildren(List<SObject> insertedRecords) {
+        // TODO: Bulkify rather than inserting one by one
+        for (SObject insertedRecord : insertedRecords) {
+            for (ChildRelationship relationship : this.registeredRelationships) {
+                relationship.ChildBuilder.with(relationship.RelationshipField, insertedRecord.Id).buildNew();
+            }
+        }
+    }
+
     private class TestDataBuilderCache {
         private Boolean initialized;
         private Map<SObjectType, ITestDataBuilder> builderByType;
@@ -110,6 +140,16 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
             }
 
             this.initialized = true;
+        }
+    }
+
+    private class ChildRelationship {
+        public ITestDataBuilder ChildBuilder { get; private set; }
+        public  SObjectField RelationshipField { get; private set; }
+
+        public ChildRelationship(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+            this.ChildBuilder = childBuilder;
+            this.RelationshipField = relationshipField;
         }
     }
 }

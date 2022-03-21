@@ -15,11 +15,11 @@ public with sharing class DynamicTestDataBuilder extends SObjectTestDataBuilder 
         return this;
     }
 
-    public SObject getNew() {
+    public SObject buildNew() {
         return this.insertSObject();
     }
 
-    public List<SObject> getNew(Integer numberOfRecords) {
+    public List<SObject> buildNew(Integer numberOfRecords) {
         return this.insertSObjects(numberOfRecords);
     }
 
