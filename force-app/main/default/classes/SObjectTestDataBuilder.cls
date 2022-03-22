@@ -1,13 +1,14 @@
 public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
+    private static History testDataHistory = new History();
     private List<ChildRelationship> registeredRelationships;
     protected Map<SObjectField, Object> customValueMap;
-    private Map<SObjectField, Object> defaultValueMap {
+    private Map<SObjectField, Object> defaultValueMapCached {
         get {
-            if (defaultValueMap == null) {
-                defaultValueMap = getDefaultValueMap();
+            if (defaultValueMapCached == null) {
+                defaultValueMapCached = getDefaultValueMap();
             }
-            return defaultValueMap;
+            return defaultValueMapCached;
         }
         set;
     }
@@ -30,38 +31,22 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return builder;
     }
 
-    // TODO: Integration test
-    // TODO: Overload that takes a quantity of records
-    public static SObject buildAny(SObjectType objectType) {
-        // TODO: Build a cache of previously saved records by type, so that we can get it from there
+    public static SObject getAny(SObjectType objectType) {
+        SObject previouslyInserted = testDataHistory.getA(objectType);
+        if (previouslyInserted != null) {
+            return previouslyInserted;
+        }
         return of(objectType).insertNew();
+    }
+
+    public static List<SObject> getChildrenOfByType(Id recordId, SObjectType objectType) {
+        return testDataHistory.getChildrenOfByType(recordId, objectType);
     }
 
     public abstract SObjectType getSObjectType();
 
-    protected SObjectTestDataBuilder withData(SObjectField field, Object value) {
-        this.customValueMap.put(field, value);
-        return this;
-    }
-
-    protected SObjectTestDataBuilder withChildren(ITestDataBuilder childBuilder, SObjectField relationshipField) {
-        // TODO: Ability to insert many children at a time
-        this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
-        return this;
-    }
-
-    protected SObject insertSObject() {
-        return this.insertSObjects(1)[0];
-    }
-
     public SObject createNew() {
         return this.createNew(1)[0];
-    }
-
-    protected List<SObject> insertSObjects(Integer numberOfRecordsToInsert) {
-        List<SObject> recordsToInsert = createNew(numberOfRecordsToInsert);
-        commitInsert(recordsToInsert);
-        return recordsToInsert;
     }
 
     public List<SObject> createNew(Integer numberOfRecords) {
@@ -70,30 +55,45 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
             SObject recordToInsert = build();
             recordsToInsert.add(recordToInsert);
         }
-        customValueMap.clear();
         return recordsToInsert;
     }
 
-    private void commitInsert(List<SObject> records) {
-        InsertTestDataUnitOfWork insertWork = new InsertTestDataUnitOfWork();
-        insertWork.register(records, this);
-        insertWork.commitWork();
-        insertChildren(records);
+    public SObjectTestDataBuilder withChildren(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+        // TODO: Ability to insert many children at a time
+        System.debug('Registering a children rel');
+        this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
+        return this;
+    }
+
+    public virtual void beforeInsert(List<SObject> records) {}
+    public virtual void afterInsert(List<SObject> records) {}
+
+    protected SObjectTestDataBuilder withData(SObjectField field, Object value) {
+        this.customValueMap.put(field, value);
+        return this;
+    }
+
+    protected SObject insertSObject() {
+        return this.insertSObjects(1)[0];
+    }
+
+    protected List<SObject> insertSObjects(Integer numberOfRecordsToInsert) {
+        List<SObject> recordsToInsert = createNew(numberOfRecordsToInsert);
+        commitInsert(recordsToInsert);
+        return recordsToInsert;
     }
 
     protected virtual Map<SObjectField, Object> getDefaultValueMap() {
         return new Map<SObjectField, Object>();
     }
-    public virtual void beforeInsert(List<SObject> records) {}
-    public virtual void afterInsert(List<SObject> records) {}
 
     private SObject build() {
         SObject instance = this.getSObjectType().newSObject(null, true);
 
-        for (SObjectField defaultField : defaultValueMap.keySet()) {
+        for (SObjectField defaultField : defaultValueMapCached.keySet()) {
             if (!customValueMap.containsKey(defaultField)) {
                 // Skip any field that has been overridden through the custom value map
-                instance.put(defaultField, defaultValueMap.get(defaultField));
+                instance.put(defaultField, defaultValueMapCached.get(defaultField));
             }
         }
 
@@ -106,6 +106,15 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return instance;
     }
 
+    private void commitInsert(List<SObject> records) {
+        InsertTestDataUnitOfWork insertWork = new InsertTestDataUnitOfWork();
+        insertWork.register(records, this);
+        insertWork.commitWork();
+        testDataHistory.log(records);
+        insertChildren(records);
+        clear();
+    }
+
     private void insertChildren(List<SObject> insertedRecords) {
         InsertTestDataUnitOfWork bulkWork = new InsertTestDataUnitOfWork();
         for (SObject insertedRecord : insertedRecords) {
@@ -115,19 +124,26 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
                 if (relationship.ChildBuilder instanceof ITestDataCallback) {
                     callback  = (ITestDataCallback)relationship.ChildBuilder;
                 }
-                bulkWork.register(relationship.ChildBuilder.createNew(1), callback);
+                List<SObject> children = relationship.ChildBuilder.createNew(1);
+                bulkWork.register(children, callback);
+                testDataHistory.logWithParent(children, insertedRecord.Id);
             }
         }
         bulkWork.commitWork();
     }
 
+    private void clear() {
+        customValueMap = new Map<SObjectField, Object>();
+        registeredRelationships = new List<ChildRelationship>();
+    }
+
     private class TestDataBuilderCache {
         private Boolean initialized;
-        private Map<SObjectType, ITestDataBuilder> builderByType;
+        private Map<SObjectType, Type> builderTypeBySObjectType;
 
         public TestDataBuilderCache() {
             this.initialized = false;
-            this.builderByType = new Map<SObjectType, ITestDataBuilder>();
+            this.builderTypeBySObjectType = new Map<SObjectType, Type>();
         }
 
         public ITestDataBuilder getFor(SObjectType objectType) {
@@ -135,7 +151,11 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
                 initializeCache();
             }
 
-            return this.builderByType.get(objectType);
+            Type builderType = this.builderTypeBySObjectType.get(objectType);
+            if (builderType == null) {
+                return null;
+            }
+            return (ITestDataBuilder)builderType.newInstance();
         }
 
         private void initializeCache() {
@@ -146,7 +166,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
                     Object currentClassInstance = currentClassType.newInstance();
                     if (currentClassInstance instanceof ITestDataBuilder) {
                         ITestDataBuilder builderInstance = (ITestDataBuilder)currentClassInstance;
-                        this.builderByType.put(builderInstance.getSObjectType(), builderInstance);
+                        this.builderTypeBySObjectType.put(builderInstance.getSObjectType(), currentClassType);
                     }
                 } catch (Exception e) {
                     // An error might occur when creating the type. If it does we move on and don't add it to the cache.
@@ -164,6 +184,82 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         public ChildRelationship(ITestDataBuilder childBuilder, SObjectField relationshipField) {
             this.ChildBuilder = childBuilder;
             this.RelationshipField = relationshipField;
+        }
+    }
+
+    private class History {
+        Map<SObjectType, List<HistoryItem>> insertedRecordsByType;
+
+        public History() {
+            this.insertedRecordsByType = new Map<SObjectType, List<HistoryItem>>();
+        }
+
+        public void log(List<SObject> insertedRecords) {
+            for (SObject insertedRecord : insertedRecords) {
+                HistoryItem item = new HistoryItem(insertedRecord);
+                log(item);
+            }
+        }
+
+        public void logWithParent(List<SObject> insertedRecords, Id parentRecordId) {
+            for (SObject insertedRecord : insertedRecords) {
+                HistoryItem item = new HistoryItem(insertedRecord, parentRecordId);
+                log(item);
+            }
+        }
+
+        public SObject getA(SObjectType objectType) {
+            List<HistoryItem> historiesForType = insertedRecordsByType.get(objectType);
+            if (historiesForType != null) {
+                return historiesForType[0].getRecord();
+            }
+            return null;
+        }
+
+        public List<SObject> getChildrenOfByType(Id recordId, SObjectType objectType) {
+            List<SObject> children = new List<SObject>();
+            List<HistoryItem> itemsByType = this.insertedRecordsByType.get(objectType);
+            if (itemsByType == null) {
+                // If no record of that type has been logged then there are no children.
+                return children;
+            }
+            for (HistoryItem item : itemsByType) {
+                if (item.getParentRecordId() == recordId) {
+                    children.add(item.getRecord());
+                }
+            }
+            return children;
+        }
+
+        private void log(HistoryItem item) {
+            List<HistoryItem> historiesByType = insertedRecordsByType.get(item.getRecord().getSObjectType());
+            if (historiesByType == null) {
+                historiesByType = new List<HistoryItem>();
+            }
+            historiesByType.add(item);
+            insertedRecordsByType.put(item.getRecord().getSObjectType(), historiesByType);
+        }
+    }
+
+    private class HistoryItem {
+        private SObject record;
+        private Id parentRecordId;
+
+        public HistoryItem(SObject record) {
+            this.record = record;
+        }
+
+        public HistoryItem(SObject record, Id parentRecordId) {
+            this.record = record;
+            this.parentRecordId = parentRecordId;
+        }
+
+        public SObject getRecord() {
+            return this.record;
+        }
+
+        public Id getParentRecordId() {
+            return this.parentRecordId;
         }
     }
 }
