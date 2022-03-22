@@ -8,11 +8,11 @@ public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder 
         return Account.SObjectType;
     }
 
-    public Account buildNew() {
+    public Account insertNew() {
         return (Account)this.insertSObject();
     }
 
-    public List<SObject> buildNew(Integer numberOfRecords) {
+    public List<SObject> insertNew(Integer numberOfRecords) {
         return this.insertSObjects(numberOfRecords);
     }
 

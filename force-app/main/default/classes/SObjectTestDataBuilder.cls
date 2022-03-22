@@ -1,4 +1,4 @@
-public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
+public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     private List<ChildRelationship> registeredRelationships;
     protected Map<SObjectField, Object> customValueMap;
@@ -25,7 +25,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     public static ITestDataBuilder of(SObjectType objectType) {
         ITestDataBuilder builder = builderCache.getFor(objectType);
         if (builder == null) {
-            return new DynamicTestDataBuilder(objectType);
+            return new DefaultTestDataBuilder(objectType);
         }
         return builder;
     }
@@ -34,7 +34,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     // TODO: Overload that takes a quantity of records
     public static SObject buildAny(SObjectType objectType) {
         // TODO: Build a cache of previously saved records by type, so that we can get it from there
-        return of(objectType).buildNew();
+        return of(objectType).insertNew();
     }
 
     public abstract SObjectType getSObjectType();
@@ -51,33 +51,41 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     }
 
     protected SObject insertSObject() {
-        SObject instance = build();
-        customValueMap.clear();
-        beforeInsert(new List<SObject> { instance });
-        insert instance;
-        afterInsert(new List<SObject> { instance });
-        insertChildren(new List<SObject> { instance });
-        return instance;
+        return this.insertSObjects(1)[0];
+    }
+
+    public SObject createNew() {
+        return this.createNew(1)[0];
     }
 
     protected List<SObject> insertSObjects(Integer numberOfRecordsToInsert) {
+        List<SObject> recordsToInsert = createNew(numberOfRecordsToInsert);
+        commitInsert(recordsToInsert);
+        return recordsToInsert;
+    }
+
+    public List<SObject> createNew(Integer numberOfRecords) {
         List<SObject> recordsToInsert = new List<SObject>();
-        for (Integer i = 0; i < numberOfRecordsToInsert; i++) {
+        for (Integer i = 0; i < numberOfRecords; i++) {
             SObject recordToInsert = build();
             recordsToInsert.add(recordToInsert);
         }
         customValueMap.clear();
-        beforeInsert(recordsToInsert);
-        insert recordsToInsert;
-        afterInsert(recordsToInsert);
         return recordsToInsert;
+    }
+
+    private void commitInsert(List<SObject> records) {
+        InsertTestDataUnitOfWork insertWork = new InsertTestDataUnitOfWork();
+        insertWork.register(records, this);
+        insertWork.commitWork();
+        insertChildren(records);
     }
 
     protected virtual Map<SObjectField, Object> getDefaultValueMap() {
         return new Map<SObjectField, Object>();
     }
-    protected virtual void beforeInsert(List<SObject> records) {}
-    protected virtual void afterInsert(List<SObject> records) {}
+    public virtual void beforeInsert(List<SObject> records) {}
+    public virtual void afterInsert(List<SObject> records) {}
 
     private SObject build() {
         SObject instance = this.getSObjectType().newSObject(null, true);
@@ -99,12 +107,18 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder {
     }
 
     private void insertChildren(List<SObject> insertedRecords) {
-        // TODO: Bulkify rather than inserting one by one
+        InsertTestDataUnitOfWork bulkWork = new InsertTestDataUnitOfWork();
         for (SObject insertedRecord : insertedRecords) {
             for (ChildRelationship relationship : this.registeredRelationships) {
-                relationship.ChildBuilder.with(relationship.RelationshipField, insertedRecord.Id).buildNew();
+                relationship.ChildBuilder.with(relationship.RelationshipField, insertedRecord.Id);
+                ITestDataCallback callback = new NullTestDataCallback();
+                if (relationship.ChildBuilder instanceof ITestDataCallback) {
+                    callback  = (ITestDataCallback)relationship.ChildBuilder;
+                }
+                bulkWork.register(relationship.ChildBuilder.createNew(1), callback);
             }
         }
+        bulkWork.commitWork();
     }
 
     private class TestDataBuilderCache {
