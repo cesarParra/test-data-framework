@@ -9,7 +9,7 @@ public interface ITestDataBuilder {
      * @return An updated version of this instance.
      */
     ITestDataBuilder with(SObjectField field, Object value);
-    ITestDataBuilder withChildren(ITestDataBuilder childBuilder, SObjectField relationshipField);
+    ITestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField);
     SObjectType getSObjectType();
     SObject createNew();
     List<SObject> createNew(Integer numberOfRecords);

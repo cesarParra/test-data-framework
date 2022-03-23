@@ -16,8 +16,11 @@ public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder 
         return this.insertSObjects(numberOfRecords);
     }
 
-    public AccountTestDataBuilder withChildContact() {
-        this.withChildren(SObjectTestDataBuilder.of(Contact.SObjectType), Contact.AccountId);
+    public AccountTestDataBuilder withChildContact(String lastName) {
+        this.withChild(
+            SObjectTestDataBuilder.of(Contact.SObjectType).with(Contact.LastName, lastName),
+            Contact.AccountId
+        );
         return this;
     }
 
