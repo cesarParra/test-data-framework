@@ -69,7 +69,7 @@ private class IntegrationTests {
     private static void canGetTheChildrenCreatedThroughABuilder() {
         Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').insertNew();
         SObjectTestDataBuilder.commitRecords();
-        List<Contact> accountChildren = SObjectTestDataBuilder.getChildrenOfByType(anyAccount.Id, Contact.SObjectType);
+        List<Contact> accountChildren = SObjectTestDataBuilder.getChildrenOfTypeById(anyAccount.Id, Contact.SObjectType);
         System.assertEquals(1, accountChildren.size(), 'Expected a child returned.');
         System.assertEquals(anyAccount.Id, accountChildren[0].AccountId, 'Expected the parent correctly set.');
     }
@@ -88,7 +88,7 @@ private class IntegrationTests {
         System.assertNotEquals(null, grandParentAccount.Id, 'Expected the grand parent to have been inserted.');
         System.assertEquals('Grandparent', grandParentAccount.Name, 'Expected the data to have been correctly set.');
 
-        Account parentAccount = (Account)SObjectTestDataBuilder.getChildrenOfByType(grandParentAccount.Id, Account.SObjectType)[0];
+        Account parentAccount = (Account)SObjectTestDataBuilder.getChildrenOfTypeById(grandParentAccount.Id, Account.SObjectType)[0];
         System.assertNotEquals(null, parentAccount.Id, 'Expected the parent to have been created.');
         System.assertEquals('Parent', parentAccount.Name, 'Expected the data to have been correctly set.');
         System.assertEquals(grandParentAccount.Id, parentAccount.ParentId, 'Expected the relationship to have been correctly created.');
@@ -160,12 +160,12 @@ private class IntegrationTests {
         System.assertNotEquals(null, grandParentAccount.Id, 'Expected the grand parent to have been inserted.');
         System.assertEquals('Grandparent', grandParentAccount.Name, 'Expected the data to have been correctly set.');
 
-        Account parentAccount = (Account)SObjectTestDataBuilder.getChildrenOfByType(grandParentAccount.Id, Account.SObjectType)[0];
+        Account parentAccount = (Account)SObjectTestDataBuilder.getChildrenOfTypeById(grandParentAccount.Id, Account.SObjectType)[0];
         System.assertNotEquals(null, parentAccount.Id, 'Expected the parent to have been created.');
         System.assertEquals('Parent', parentAccount.Name, 'Expected the data to have been correctly set.');
         System.assertEquals(grandParentAccount.Id, parentAccount.ParentId, 'Expected the relationship to have been correctly created.');
 
-        Account childAccount = (Account)SObjectTestDataBuilder.getChildrenOfByType(parentAccount.Id, Account.SObjectType)[0];
+        Account childAccount = (Account)SObjectTestDataBuilder.getChildrenOfTypeById(parentAccount.Id, Account.SObjectType)[0];
         System.assertNotEquals(null, childAccount.Id, 'Expected child parent to have been created.');
         System.assertEquals('Child', childAccount.Name, 'Expected the data to have been correctly set.');
         System.assertEquals(parentAccount.Id, childAccount.ParentId, 'Expected the relationship to have been correctly created.');

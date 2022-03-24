@@ -1,3 +1,4 @@
+// TODO: Refactor functionality into the fflib_UoW and get rid of this
 @IsTest
 public class InsertTestDataUnitOfWork {
     private List<UnitOfWorkRegistration> registrations;

@@ -1,6 +1,3 @@
-// TODO: Now that we are using fflib, let's see what we can do about defaulting parents. For example having a contact having a defualt AccountId
-// how can we do that with the least amount of DMLs possible
-
 // TODO: Rename everything that says insert now that we are not directly inserting here
 public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
@@ -24,11 +21,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         registeredRelationships = new List<ChildRelationship>();
     }
 
-    // TODO: Maybe we can have an "in memory" overload (using an enum) here that allows us to
-    // use this same API but just creating everything in memory. We can use sfab style
-    // of JSON manipulation to create child relationships
-    // sfab style will also allow us to easily populate non-writable fields like formulas
-    // In the overload we can even specify if we want "fake Ids" to be created for us when we are in "in memory mode"
     public static ITestDataBuilder of(SObjectType objectType) {
         ITestDataBuilder builder = builderCache.getFor(objectType);
         if (builder == null) {
@@ -45,7 +37,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return of(objectType).insertNew();
     }
 
-    public static List<SObject> getChildrenOfByType(Id recordId, SObjectType objectType) {
+    public static List<SObject> getChildrenOfTypeById(Id recordId, SObjectType objectType) {
         return testDataHistory.getChildrenOfByType(recordId, objectType);
     }
 
@@ -63,8 +55,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         }
 
         List<SObjectType> workTypes = getSObjectTypesToRegisterToUnitOfWorkInOrder(allLateBindingsTemp);
-        System.debug('Types in order: ' + workTypes);
-
         fflib_SObjectUnitOfWork uOW = new fflib_SObjectUnitOfWork(workTypes,
             fflib_SObjectUnitOfWork.UnresolvedRelationshipBehavior.AttemptResolveOutOfOrder
         );
@@ -125,36 +115,12 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return this;
     }
 
+    public virtual void beforeInsert(List<SObject> records) {}
+    public virtual void afterInsert(List<SObject> records) {}
+
     protected LateBinding bindTo(ITestDataBuilder builder) {
         return new LateBinding(builder);
     }
-
-    public class LateBinding {
-        private ITestDataBuilder builder;
-        private SObjectField relationshipField;
-        private SObject childRecord;
-        private SObject parentRecord;
-
-        public LateBinding(ITestDataBuilder builder) {
-            this.builder = builder;
-        }
-
-        public LateBinding setRelationshipField(SObjectField field) {
-            this.relationshipField = field;
-            return this;
-        }
-
-        private void setChildRecord(SObject childRecord) {
-            this.childRecord = childRecord;
-        }
-
-        private void setCreatedParent(SObject parentRecord) {
-            this.parentRecord = parentRecord;
-        }
-    }
-
-    public virtual void beforeInsert(List<SObject> records) {}
-    public virtual void afterInsert(List<SObject> records) {}
 
     protected SObjectTestDataBuilder withData(SObjectField field, Object value) {
         this.customValueMap.put(field, value);
@@ -275,6 +241,30 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         }
     }
 
+    public class LateBinding {
+        private ITestDataBuilder builder;
+        private SObjectField relationshipField;
+        private SObject childRecord;
+        private SObject parentRecord;
+
+        public LateBinding(ITestDataBuilder builder) {
+            this.builder = builder;
+        }
+
+        public LateBinding setRelationshipField(SObjectField field) {
+            this.relationshipField = field;
+            return this;
+        }
+
+        private void setChildRecord(SObject childRecord) {
+            this.childRecord = childRecord;
+        }
+
+        private void setCreatedParent(SObject parentRecord) {
+            this.parentRecord = parentRecord;
+        }
+    }
+
     private class ChildRelationship {
         public ITestDataBuilder ChildBuilder { get; private set; }
         public SObjectField RelationshipField { get; private set; }
@@ -337,9 +327,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
                 return children;
             }
             for (HistoryItem item : itemsByType) {
-//                System.debug('Item: ' + item.getRecord().get(Account.Name));
-//                System.debug('Item Id: ' + item.getRecord().get(Account.Id));
-//                System.debug('Items Parent: ' + item.getParentRecord());
                 if (item.getParentRecord()?.Id == recordId) {
                     children.add(item.getRecord());
                 }
