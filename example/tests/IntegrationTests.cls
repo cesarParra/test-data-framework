@@ -88,6 +88,33 @@ private class IntegrationTests {
     }
 
     @IsTest
+    private static void supportsDefaultRelationshipBindings() {
+        Order__c orderRecord = (Order__c)new OrderTestDataBuilder().insertNew();
+        SObjectTestDataBuilder.commitRecords();
+
+        System.assertNotEquals(null, orderRecord, 'Expected the record to have been inserted.');
+        System.assertNotEquals(null, orderRecord.Customer__c, 'Expected the Customer relationship to have been populated.');
+        // TODO: Check how many DML statements this is
+    }
+
+    @IsTest
+    private static void supportsBuildersWithMultipleRelationshipBindings() {
+        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
+        OrderItem__c itemRecord2 = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
+        SObjectTestDataBuilder.commitRecords();
+
+        System.assertNotEquals(null, itemRecord.Id);
+        System.assertNotEquals(null, itemRecord.Order__c);
+        System.assertNotEquals(null, itemRecord.Product__c);
+
+        System.assertNotEquals(null, itemRecord2.Id);
+        System.assertNotEquals(null, itemRecord2.Order__c);
+        System.assertNotEquals(null, itemRecord2.Product__c);
+
+        System.debug(Limits.getDmlStatements());
+    }
+
+    @IsTest
     private static void supportsRecursiveRelationshipsAcrossMultipleLevels() {
         Account grandParentAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType)
             .with(Account.Name, 'Grandparent')

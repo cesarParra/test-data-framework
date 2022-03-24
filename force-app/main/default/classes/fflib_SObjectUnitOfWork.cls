@@ -1,3 +1,4 @@
+// FFLIB with order resolution
 // TODO: Refactor to only use what is necessary
 // TODO: Rename
 // TODO: Make IsTest
@@ -112,6 +113,8 @@ public virtual class fflib_SObjectUnitOfWork
     {
         public virtual void dmlInsert(List<SObject> objList)
         {
+            System.debug('Doing simple insert on');
+            System.debug(objList);
             insert objList;
         }
         public virtual void dmlUpdate(List<SObject> objList)
@@ -329,9 +332,16 @@ public virtual class fflib_SObjectUnitOfWork
         assertForNonEventSObjectType(sObjectType);
         assertForSupportedSObjectType(m_newListByType, sObjectType);
 
+//        List<SObject> sObjectsRegisteredByType = m_newListByType.get(sObjectType);
+//        if (!sObjectsRegisteredByType.contains(record)) {
+//            m_newListByType.get(sObjectType).add(record);
+//        }
+        System.debug('registering: ' + record);
         m_newListByType.get(sObjectType).add(record);
-        if (relatedToParentRecord!=null && relatedToParentField!=null)
+
+        if (relatedToParentRecord != null && relatedToParentField != null) {
             registerRelationship(record, relatedToParentField, relatedToParentRecord);
+        }
     }
 
     /**
@@ -925,6 +935,9 @@ public virtual class fflib_SObjectUnitOfWork
                         'before child so child does not need an update. In unit of work initialization put ' +
                         '' + RelatedTo.getSObjectType() + ' before ' + Record.getSObjectType());
                 }
+                System.debug('Record: ' + Record);
+                System.debug('Relationship: ' + RelatedToField);
+                System.debug('Related To: ' + RelatedTo);
                 Resolved = false;
             } else {
                 Record.put(RelatedToField, RelatedTo.Id);
