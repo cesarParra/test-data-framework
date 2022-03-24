@@ -50,6 +50,8 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
     }
 
     public static void commitRecords() {
+        // TODO: Skip if there's nothing to commit
+        // TODO: Ensure that this can be called multiple times
         List<LateBinding> allLateBindingsTemp = new List<SObjectTestDataBuilder.LateBinding>();// TODO: Name better
         while (allBindings.size() > 0) {
             // Using this technique because throughout this process the allBindings list could be modified

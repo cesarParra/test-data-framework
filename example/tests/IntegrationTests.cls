@@ -59,6 +59,13 @@ private class IntegrationTests {
     }
 
     @IsTest
+    private static void canBetAnyWithoutHavingInsertedPreviously() {
+        Account anyAccount = (Account)SObjectTestDataBuilder.getAny(Account.SObjectType);
+        SObjectTestDataBuilder.commitRecords();
+        System.assertNotEquals(null, anyAccount.Id, 'Expected an account.');
+    }
+
+    @IsTest
     private static void canGetTheChildrenCreatedThroughABuilder() {
         Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').insertNew();
         SObjectTestDataBuilder.commitRecords();
@@ -94,11 +101,21 @@ private class IntegrationTests {
 
         System.assertNotEquals(null, orderRecord, 'Expected the record to have been inserted.');
         System.assertNotEquals(null, orderRecord.Customer__c, 'Expected the Customer relationship to have been populated.');
-        // TODO: Check how many DML statements this is
     }
 
     @IsTest
     private static void supportsBuildersWithMultipleRelationshipBindings() {
+        // OrderItemTestDataBuilder is child of both Order and Product, and Order is in turn child of Account
+        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
+        SObjectTestDataBuilder.commitRecords();
+
+        System.assertNotEquals(null, itemRecord.Id);
+        System.assertNotEquals(null, itemRecord.Order__c);
+        System.assertNotEquals(null, itemRecord.Product__c);
+    }
+
+    @IsTest
+    private static void supportsMultipleBuildersWithMultipleRelationshipBindings() {
         OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
         OrderItem__c itemRecord2 = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
         SObjectTestDataBuilder.commitRecords();
@@ -111,7 +128,18 @@ private class IntegrationTests {
         System.assertNotEquals(null, itemRecord2.Order__c);
         System.assertNotEquals(null, itemRecord2.Product__c);
 
-        System.debug(Limits.getDmlStatements());
+        Integer usedDml = Limits.getDmlStatements();
+        Account accountRecord = (Account)SObjectTestDataBuilder.getAny(Account.SObjectType);
+        System.assertNotEquals(null, accountRecord?.Id, 'Should be able get to a pre-inserted account.');
+
+        Product__c productRecord = (Product__c)SObjectTestDataBuilder.getAny(Product__c.SObjectType);
+        System.assertNotEquals(null, productRecord?.Id, 'Should be able to get a pre-inserted product');
+
+        Order__c orderRecord = (Order__c)SObjectTestDataBuilder.getAny(Order__c.SObjectType);
+        System.assertNotEquals(null, orderRecord?.Id, 'Should be able to get a pre-inserted order');
+
+        System.assertEquals(usedDml, Limits.getDmlStatements(),
+            'Expected to not have increased the number of DML statements by getting pre-inserted records from the builder.');
     }
 
     @IsTest
@@ -169,4 +197,6 @@ private class IntegrationTests {
 //            .insertNew();
 //        SObjectTestDataBuilder.commitRecords();
 //    }
+
+    // TODO: What happens when calling commit multiple times
 }

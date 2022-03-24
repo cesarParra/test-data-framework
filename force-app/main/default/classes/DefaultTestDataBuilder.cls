@@ -35,6 +35,7 @@ public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder 
         }
     }
 
+    // TODO: Can we also default relationships using the bind?
     private void resolveDefaultValue(DescribeFieldResult fieldResult, SObject currentRecord, SObjectField currentField) {
         if (fieldResult.getType() == DisplayType.BOOLEAN) {
             currentRecord.put(currentField, DefaultTestData.DEFAULT_BOOLEAN);
