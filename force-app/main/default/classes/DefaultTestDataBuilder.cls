@@ -12,61 +12,69 @@ public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder 
         return this;
     }
 
-    public SObject insertNew() {
-        return this.insertSObject();
+    public SObject registerNewForInsert() {
+        return this.registerSObjectForInsert();
     }
 
-    public List<SObject> insertNew(Integer numberOfRecords) {
-        return this.insertSObjects(numberOfRecords);
+    public List<SObject> registerNewForInsert(Integer numberOfRecords) {
+        return this.registerSObjectsForInsert(numberOfRecords);
     }
 
     public override SObjectType getSObjectType() {
         return this.objectType;
     }
 
-    public override void beforeInsert(List<SObject> records) {
-        for (SObject currentRecord : records) {
-            for (SObjectField currentField : currentRecord.getSObjectType().getDescribe().fields.getMap().values()) {
-                DescribeFieldResult fieldResult = currentField.getDescribe();
-                if (isFieldRequired(fieldResult)) {
-                    resolveDefaultValue(fieldResult, currentRecord, currentField);
-                }
+    protected override Map<SObjectField, Object> getDefaultValueMap() {
+        Map<SObjectField, Object> defaultValueMap = new Map<SObjectField, Object>();
+        for (SObjectField currentField : getSObjectType().getDescribe().fields.getMap().values()) {
+            DescribeFieldResult fieldResult = currentField.getDescribe();
+            if (isFieldRequired(fieldResult)) {
+                defaultValueMap.put(currentField, resolveDefaultValue(fieldResult));
             }
         }
+        return defaultValueMap;
     }
 
     // TODO: Can we also default relationships using the bind?
-    private void resolveDefaultValue(DescribeFieldResult fieldResult, SObject currentRecord, SObjectField currentField) {
-        if (fieldResult.getType() == DisplayType.BOOLEAN) {
-            currentRecord.put(currentField, DefaultTestData.DEFAULT_BOOLEAN);
+
+    private Object resolveDefaultValue(DescribeFieldResult fieldResult) {
+        if ((fieldResult.getType() == DisplayType.ID || fieldResult.getType() == DisplayType.REFERENCE)
+            && fieldResult.getReferenceTo().size() > 0) {
+            return bindTo(SObjectTestDataBuilder.of(fieldResult.getReferenceTo()[0]));
         }
-        else if (fieldResult.getType() == DisplayType.COMBOBOX || fieldResult.getType() == DisplayType.ENCRYPTEDSTRING ||
+        if (fieldResult.getType() == DisplayType.BOOLEAN) {
+            return DefaultTestData.DEFAULT_BOOLEAN;
+        }
+        if (fieldResult.getType() == DisplayType.COMBOBOX || fieldResult.getType() == DisplayType.ENCRYPTEDSTRING ||
             fieldResult.getType() == DisplayType.MULTIPICKLIST || fieldResult.getType() == DisplayType.PICKLIST ||
             fieldResult.getType() == DisplayType.STRING || fieldResult.getType() == DisplayType.TEXTAREA) {
-            currentRecord.put(currentField, DefaultTestData.TEXT);
+            return DefaultTestData.TEXT;
         }
-        else if (fieldResult.getType() == DisplayType.CURRENCY || fieldResult.getType() == DisplayType.DOUBLE ||
+        if (fieldResult.getType() == DisplayType.CURRENCY || fieldResult.getType() == DisplayType.DOUBLE ||
             fieldResult.getType() == DisplayType.INTEGER || fieldResult.getType() == DisplayType.LONG) {
-            currentRecord.put(currentField, DefaultTestData.DEFAULT_NUMBER);
+            return DefaultTestData.DEFAULT_NUMBER;
         }
-        else if (fieldResult.getType() == DisplayType.DATE) {
-            currentRecord.put(currentField, DefaultTestData.DEFAULT_DATE);
+        if (fieldResult.getType() == DisplayType.DATE) {
+            return DefaultTestData.DEFAULT_DATE;
         }
-        else if (fieldResult.getType() == DisplayType.DATETIME) {
-            currentRecord.put(currentField, DefaultTestData.DEFAULT_DATE_TIME);
+        if (fieldResult.getType() == DisplayType.DATETIME) {
+            return DefaultTestData.DEFAULT_DATE_TIME;
         }
-        else if (fieldResult.getType() == DisplayType.EMAIL) {
-            currentRecord.put(currentField, DefaultTestData.EMAIL);
+        if (fieldResult.getType() == DisplayType.EMAIL) {
+            return DefaultTestData.EMAIL;
         }
-        else if (fieldResult.getType() == DisplayType.PERCENT) {
-            currentRecord.put(currentField, DefaultTestData.PERCENT);
+        if (fieldResult.getType() == DisplayType.PERCENT) {
+            return DefaultTestData.PERCENT;
         }
-        else if (fieldResult.getType() == DisplayType.PHONE) {
-            currentRecord.put(currentField, DefaultTestData.PHONE_NUMBER);
+        if (fieldResult.getType() == DisplayType.PHONE) {
+            return DefaultTestData.PHONE_NUMBER;
         }
-        else if (fieldResult.getType() == DisplayType.URL) {
-            currentRecord.put(currentField, DefaultTestData.URL);
+        if (fieldResult.getType() == DisplayType.URL) {
+            return DefaultTestData.URL;
         }
+
+        throw new SObjectTestDataBuilder.SObjectTestDataBuilderException('Could not resolve default field for ' +
+            fieldResult.getName());
     }
 
     private Boolean isFieldRequired(DescribeFieldResult field) {

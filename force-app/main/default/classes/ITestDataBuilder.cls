@@ -11,8 +11,6 @@ public interface ITestDataBuilder {
     ITestDataBuilder with(SObjectField field, Object value);
     ITestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField);
     SObjectType getSObjectType();
-    SObject createNew();
-    List<SObject> createNew(Integer numberOfRecords);
-    SObject insertNew();
-    List<SObject> insertNew(Integer numberOfRecords);
+    SObject registerNewForInsert();
+    List<SObject> registerNewForInsert(Integer numberOfRecords);
 }

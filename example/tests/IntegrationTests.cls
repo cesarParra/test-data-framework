@@ -4,7 +4,7 @@ private class IntegrationTests {
     private static void canCreateRecordsWithoutACustomTestDataBuilder() {
         Contact anyContact = (Contact)SObjectTestDataBuilder.of(Contact.SObjectType)
             .with(Contact.LastName, 'Parra')
-            .insertNew();
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         System.assertNotEquals(null, anyContact?.Id, 'Expected a record returned.');
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected a single DML statement');
@@ -12,7 +12,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void canCreateRecordsUsingCustomTestDataBuilderWhenItExists() {
-        Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).insertNew();
+        Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
         System.assertEquals('ACME', anyAccount.Name, 'Expected the default name specified in the builder class.');
@@ -21,7 +21,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void canCreateRecordsDirectlyThroughTheirBuilders() {
-        Account anyAccount = new AccountTestDataBuilder().insertNew();
+        Account anyAccount = new AccountTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected a single DML statement');
@@ -29,7 +29,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void canCreateWithChildren() {
-        Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').insertNew();
+        Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         Account insertedAccount = [SELECT Id, (SELECT Id FROM Contacts) FROM  Account WHERE Id = :anyAccount.Id];
         System.assertEquals(1, insertedAccount.Contacts.size(), 'Expected a contact to have been created for the account.');
@@ -40,7 +40,7 @@ private class IntegrationTests {
     private static void canCreateWithMultipleChildren() {
         Account anyAccount = new AccountTestDataBuilder()
             .withChildContact('Parra')
-            .withChildContact('Garcia').insertNew();
+            .withChildContact('Garcia').registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         Account insertedAccount = [SELECT Id, (SELECT Id FROM Contacts) FROM  Account WHERE Id = :anyAccount.Id];
         System.assertEquals(2, insertedAccount.Contacts.size(), 'Expected two child contacts.');
@@ -49,7 +49,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void canGetAnyRecordFromThePreviouslyCreated() {
-        new AccountTestDataBuilder().insertNew(2);
+        new AccountTestDataBuilder().registerNewForInsert(2);
         SObjectTestDataBuilder.commitRecords();
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected the insertNew operation to have consumed a single DML statement.');
         Account anyAccount = (Account)SObjectTestDataBuilder.getAny(Account.SObjectType);
@@ -67,7 +67,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void canGetTheChildrenCreatedThroughABuilder() {
-        Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').insertNew();
+        Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
         List<Contact> accountChildren = SObjectTestDataBuilder.getChildrenOfTypeById(anyAccount.Id, Contact.SObjectType);
         System.assertEquals(1, accountChildren.size(), 'Expected a child returned.');
@@ -82,7 +82,7 @@ private class IntegrationTests {
                 SObjectTestDataBuilder.of(Account.SObjectType)
                     .with(Account.Name, 'Parent'),
                 Account.ParentId)
-            .insertNew();
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, grandParentAccount.Id, 'Expected the grand parent to have been inserted.');
@@ -96,7 +96,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void supportsDefaultRelationshipBindings() {
-        Order__c orderRecord = (Order__c)new OrderTestDataBuilder().insertNew();
+        Order__c orderRecord = (Order__c)new OrderTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, orderRecord, 'Expected the record to have been inserted.');
@@ -106,7 +106,7 @@ private class IntegrationTests {
     @IsTest
     private static void supportsBuildersWithMultipleRelationshipBindings() {
         // OrderItemTestDataBuilder is child of both Order and Product, and Order is in turn child of Account
-        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
+        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, itemRecord.Id);
@@ -116,8 +116,8 @@ private class IntegrationTests {
 
     @IsTest
     private static void supportsMultipleBuildersWithMultipleRelationshipBindings() {
-        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
-        OrderItem__c itemRecord2 = (OrderItem__c)new OrderItemTestDataBuilder().insertNew();
+        OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().registerNewForInsert();
+        OrderItem__c itemRecord2 = (OrderItem__c)new OrderItemTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, itemRecord.Id);
@@ -154,7 +154,7 @@ private class IntegrationTests {
                         Account.ParentId
                     ),
                 Account.ParentId)
-            .insertNew();
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, grandParentAccount.Id, 'Expected the grand parent to have been inserted.');
@@ -169,6 +169,15 @@ private class IntegrationTests {
         System.assertNotEquals(null, childAccount.Id, 'Expected child parent to have been created.');
         System.assertEquals('Child', childAccount.Name, 'Expected the data to have been correctly set.');
         System.assertEquals(parentAccount.Id, childAccount.ParentId, 'Expected the relationship to have been correctly created.');
+    }
+
+    @IsTest
+    private static void defaultBuilderResolvesRelationships() {
+        PricebookEntry entry = (PricebookEntry)SObjectTestDataBuilder.of(PricebookEntry.SObjectType).registerNewForInsert();
+        SObjectTestDataBuilder.commitRecords();
+
+        System.assertNotEquals(null, entry.Product2Id);
+        System.assertNotEquals(null, entry.Pricebook2);
     }
 
     // TODO: This is getting out of control. Let's instead create our own data structure that is a bit simpler to get that

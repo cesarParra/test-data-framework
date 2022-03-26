@@ -7,12 +7,12 @@ public with sharing class OrderTestDataBuilder extends SObjectTestDataBuilder im
         return (OrderTestDataBuilder) withData(field, value);
     }
 
-    public Order__c insertNew() {
-        return (Order__c) this.insertSObject();
+    public Order__c registerNewForInsert() {
+        return (Order__c) this.registerSObjectForInsert();
     }
 
-    public List<SObject> insertNew(Integer numberOfRecords) {
-        return this.insertSObjects(numberOfRecords);
+    public List<SObject> registerNewForInsert(Integer numberOfRecords) {
+        return this.registerSObjectsForInsert(numberOfRecords);
     }
 
     protected override Map<SObjectField, Object> getDefaultValueMap() {

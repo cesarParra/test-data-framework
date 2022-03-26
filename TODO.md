@@ -1,6 +1,7 @@
 * Clean up
   * Refactor fflib_UoW to just be what we need
   * Clean up System.debugs
+* External Id support
 * Documentation
   * README
   * Apexdocs

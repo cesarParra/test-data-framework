@@ -1,5 +1,4 @@
-// TODO: Rename everything that says insert now that we are not directly inserting here
-public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestDataCallback {
+public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDataCallback.ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     private static History testDataHistory = new History();
     private static List<LateBinding> allBindings = new List<LateBinding>();
@@ -34,7 +33,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         if (previouslyInserted != null) {
             return previouslyInserted;
         }
-        return of(objectType).insertNew();
+        return of(objectType).registerNewForInsert();
     }
 
     public static List<SObject> getChildrenOfTypeById(Id recordId, SObjectType objectType) {
@@ -42,34 +41,36 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
     }
 
     public static void commitRecords() {
-        // TODO: Skip if there's nothing to commit
         // TODO: Ensure that this can be called multiple times
-        List<LateBinding> allLateBindingsTemp = new List<SObjectTestDataBuilder.LateBinding>();// TODO: Name better
+        List<LateBinding> allLateBindings = new List<LateBinding>();
         while (allBindings.size() > 0) {
             // Using this technique because throughout this process the allBindings list could be modified
-            // if more parents need to be added up the chain
+            // if more parents need to be added up the chain when registerNewForInsert gets called.
             LateBinding binding = allBindings.remove(0);
-            allLateBindingsTemp.add(binding);
-            SObject parentRecord = binding.builder.insertNew();
+            allLateBindings.add(binding);
+            SObject parentRecord = binding.builder.registerNewForInsert();
             binding.setCreatedParent(parentRecord);
         }
 
-        List<SObjectType> workTypes = getSObjectTypesToRegisterToUnitOfWorkInOrder(allLateBindingsTemp);
+        if (testDataHistory.isEmpty()) {
+            return;
+        }
+
+        List<SObjectType> workTypes = getSObjectTypesToRegisterToUnitOfWorkInOrder(allLateBindings);
         fflib_SObjectUnitOfWork uOW = new fflib_SObjectUnitOfWork(workTypes,
             fflib_SObjectUnitOfWork.UnresolvedRelationshipBehavior.AttemptResolveOutOfOrder
         );
 
         for (HistoryItem item : testDataHistory.getAll()) {
-            uOW.registerNew(item.getRecord());
+            uOW.registerNew(item.getRecord(), item.callback);
         }
 
-        for (LateBinding binding : allLateBindingsTemp) {
+        for (LateBinding binding : allLateBindings) {
             uOW.registerRelationship(binding.childRecord, binding.relationshipField, binding.parentRecord);
         }
 
         for (HistoryItem item : testDataHistory.getAllChildren()) {
             // If any of the records to insert have a relationship we register that as well
-            // TODO: Add ability to use the relationship that has the External Id and test how many DML operations that uses
             uOW.registerRelationship(item.getRecord(), item.getRelationshipField(), item.getParentRecord());
         }
         uOW.commitWork();
@@ -96,10 +97,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
 
     public abstract SObjectType getSObjectType();
 
-    public SObject createNew() {
-        return this.createNew(1)[0];
-    }
-
     public List<SObject> createNew(Integer numberOfRecords) {
         List<SObject> recordsToInsert = new List<SObject>();
         for (Integer i = 0; i < numberOfRecords; i++) {
@@ -110,13 +107,12 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
     }
 
     public SObjectTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
-        // TODO: Ability to insert many children at a time
         this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
         return this;
     }
 
-    public virtual void beforeInsert(List<SObject> records) {}
-    public virtual void afterInsert(List<SObject> records) {}
+    public virtual void beforeInsert(SObject record) {}
+    public virtual void afterInsert(SObject record) {}
 
     protected LateBinding bindTo(ITestDataBuilder builder) {
         return new LateBinding(builder);
@@ -127,20 +123,18 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return this;
     }
 
-    protected SObject insertSObject() {
-        return this.insertSObjects(1)[0];
+    protected SObject registerSObjectForInsert() {
+        return this.registerSObjectsForInsert(1)[0];
     }
 
-    protected List<SObject> insertSObjects(Integer numberOfRecordsToInsert) {
-        return this.insertSObjects(numberOfRecordsToInsert, null, null);
+    protected List<SObject> registerSObjectsForInsert(Integer numberOfRecordsToInsert) {
+        return this.registerSObjects(numberOfRecordsToInsert, null, null);
     }
 
-    protected List<SObject> insertSObjects(Integer numberOfRecordsToInsert, SObjectField parentRelationship, SObject relatedTo) {
+    protected List<SObject> registerSObjects(Integer numberOfRecordsToInsert, SObjectField parentRelationship, SObject relatedTo) {
         List<SObject> recordsToInsert = createNew(numberOfRecordsToInsert);
-        this.beforeInsert(recordsToInsert); // TODO: Do this with the callback passing it to the UoW since this is not a real insert
-        this.afterInsert(recordsToInsert); // TODO: Do this with the callback passing it to the UoW since this is not a real insert
-        testDataHistory.log(recordsToInsert, relatedTo, parentRelationship);
-        insertChildren(recordsToInsert);
+        testDataHistory.log(recordsToInsert, relatedTo, parentRelationship, this);
+        registerChildren(recordsToInsert);
         clear();
         return recordsToInsert;
     }
@@ -187,11 +181,11 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         return false;
     }
 
-    private void insertChildren(List<SObject> insertedRecords) {
+    private void registerChildren(List<SObject> insertedRecords) {
         for (SObject insertedRecord : insertedRecords) {
             for (ChildRelationship relationship : this.registeredRelationships) {
                 SObjectTestDataBuilder relationshipAsTestData = (SObjectTestDataBuilder)relationship.ChildBuilder; // TODO: Cleaner way of doing this?
-                relationshipAsTestData.insertSObjects(1, relationship.RelationshipField, insertedRecord);
+                relationshipAsTestData.registerSObjects(1, relationship.RelationshipField, insertedRecord);
             }
         }
     }
@@ -282,9 +276,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
             this.insertedRecordsByType = new Map<SObjectType, List<HistoryItem>>();
         }
 
-        public void log(List<SObject> insertedRecords, SObject parentRecord, SObjectField relationshipField) {
+        public void log(List<SObject> insertedRecords, SObject parentRecord, SObjectField relationshipField,
+            TestDataCallback.ITestDataCallback callback) {
             for (SObject insertedRecord : insertedRecords) {
-                HistoryItem item = new HistoryItem(insertedRecord, parentRecord, relationshipField);
+                HistoryItem item = new HistoryItem(insertedRecord, parentRecord, relationshipField, callback);
                 log(item);
             }
         }
@@ -299,6 +294,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
 
         public Set<SObjectType> getSObjectTypes() {
             return this.insertedRecordsByType.keySet();
+        }
+
+        public Boolean isEmpty() {
+            return this.getAll().isEmpty();
         }
 
         public List<HistoryItem> getAll() {
@@ -348,15 +347,14 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
         private SObject record;
         private SObject parentRecord;
         private SObjectField relationshipToParent;
+        private TestDataCallback.ITestDataCallback callback;
 
-        public HistoryItem(SObject record) {
-            this.record = record;
-        }
-
-        public HistoryItem(SObject record, SObject parentRecord, SObjectField relationshipField) {
+        public HistoryItem(SObject record, SObject parentRecord, SObjectField relationshipField,
+            TestDataCallback.ITestDataCallback callback) {
             this.record = record;
             this.parentRecord = parentRecord;
             this.relationshipToParent = relationshipField;
+            this.callback = callback;
         }
 
         public SObject getRecord() {
@@ -375,4 +373,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, ITestD
             return this.parentRecord == null;
         }
     }
+
+    public class SObjectTestDataBuilderException extends Exception {}
 }

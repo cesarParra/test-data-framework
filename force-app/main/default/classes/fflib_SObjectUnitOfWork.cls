@@ -1,4 +1,3 @@
-// FFLIB with order resolution
 // TODO: Refactor to only use what is necessary
 // TODO: Rename
 // TODO: Make IsTest
@@ -51,7 +50,6 @@
  **/
 @IsTest
 public class fflib_SObjectUnitOfWork {
-
     /*
      * @description Unit of work has two ways of resolving registered relationships that require an update to resolve (e.g. parent
      * and child are same sobject type, or the parent is inserted after the child):
@@ -65,9 +63,19 @@ public class fflib_SObjectUnitOfWork {
         UnresolvedRelationshipBehavior.IgnoreOutOfOrder;
 
     protected List<Schema.SObjectType> m_sObjectTypes = new List<Schema.SObjectType>();
-    protected Map<String, List<SObject>> m_newListByType = new Map<String, List<SObject>>();
+    protected Map<String, List<NewSObjectAndCallback>> m_newListByType = new Map<String, List<NewSObjectAndCallback>>();
     protected Map<String, Map<Id, SObject>> m_dirtyMapByType = new Map<String, Map<Id, SObject>>();
     protected Map<String, Relationships> m_relationships = new Map<String, Relationships>();
+
+    private class NewSObjectAndCallback {
+        public SObject Record { get; private set; }
+        public TestDataCallback.ITestDataCallback Callback { get; set; }
+
+        public NewSObjectAndCallback(SObject record, TestDataCallback.ITestDataCallback callback) {
+            this.Record = record;
+            this.Callback = callback;
+        }
+    }
 
     protected IDML m_dml;
 
@@ -157,7 +165,7 @@ public class fflib_SObjectUnitOfWork {
         String sObjectName = sObjectType.getDescribe().getName();
 
         // add type to dml operation tracking
-        m_newListByType.put(sObjectName, new List<SObject>());
+        m_newListByType.put(sObjectName, new List<NewSObjectAndCallback>());
         m_dirtyMapByType.put(sObjectName, new Map<Id, SObject>());
         m_relationships.put(sObjectName, new Relationships(m_unresolvedRelationshipBehaviour));
     }
@@ -165,20 +173,9 @@ public class fflib_SObjectUnitOfWork {
     /**
      * @description Register a newly created SObject instance to be inserted when commitWork is called
      * @param record A newly created SObject instance to be inserted during commitWork
+     * @param callback TestDataCallback.ITestDataCallback to be called before and after record insert.
      **/
-    public void registerNew(SObject record)
-    {
-        registerNew(record, null, null);
-    }
-
-    /**
-     * @description Register a newly created SObject instance to be inserted when commitWork is called,
-     *   you may also provide a reference to the parent record instance (should also be registered as new separately)
-     * @param record A newly created SObject instance to be inserted during commitWork
-     * @param relatedToParentField A SObjectField reference to the child field that associates the child record with its parent
-     * @param relatedToParentRecord A SObject instance of the parent record (should also be registered as new separately)
-     **/
-    public void registerNew(SObject record, Schema.SObjectField relatedToParentField, SObject relatedToParentRecord) {
+    public void registerNew(SObject record, TestDataCallback.ITestDataCallback callback) {
         if (record.Id != null) {
             throw new UnitOfWorkException('Only new records can be registered as new');
         }
@@ -187,10 +184,7 @@ public class fflib_SObjectUnitOfWork {
 
         assertForSupportedSObjectType(m_newListByType, sObjectType);
 
-        m_newListByType.get(sObjectType).add(record);
-        if (relatedToParentRecord != null && relatedToParentField != null) {
-            registerRelationship(record, relatedToParentField, relatedToParentRecord);
-        }
+        m_newListByType.get(sObjectType).add(new NewSObjectAndCallback(record, callback));
     }
 
     /**
@@ -226,7 +220,15 @@ public class fflib_SObjectUnitOfWork {
         for (Schema.SObjectType sObjectType : m_sObjectTypes)
         {
             m_relationships.get(sObjectType.getDescribe().getName()).resolve();
-            m_dml.dmlInsert(m_newListByType.get(sObjectType.getDescribe().getName()));
+            List<SObject> recordsToInsert = new List<SObject>();
+            for (NewSObjectAndCallback toInsert : m_newListByType.get(sObjectType.getDescribe().getName())) {
+                recordsToInsert.add(toInsert.Record);
+                toInsert.Callback.beforeInsert(toInsert.Record);
+            }
+            m_dml.dmlInsert(recordsToInsert);
+            for (NewSObjectAndCallback toInsert : m_newListByType.get(sObjectType.getDescribe().getName())) {
+                toInsert.Callback.afterInsert(toInsert.Record);
+            }
         }
 
         // Resolve any unresolved relationships where parent was inserted after child, and so child lookup was not set
