@@ -160,6 +160,26 @@ private class IntegrationTests {
     }
 
     @IsTest
+    private static void anErrorIsThrownWhenWithChildrenAndLateBindingAreUsedAtTheSameTime() {
+        // This way of registering parent-child relationships is incorrect because we are both
+        // calling withChild to specify the parent-to-child relationship and also calling with
+        // with a late binding from the child to the parent.
+        // Only one method of registering relationships should be used at a time.
+        try {
+            SObjectTestDataBuilder.of(Order__c.SObjectType).withChild(
+                SObjectTestDataBuilder.of(OrderItem__c.SObjectType).
+                    with(OrderItem__c.Order__c, SObjectTestDataBuilder.lateBinding(Order__c.SObjectType)),
+                OrderItem__c.Order__c
+            ).registerNewForInsert();
+            System.assert(false, 'Expected an exception to have been thrown.');
+        } catch (SObjectTestDataBuilder.SObjectTestDataBuilderException e) {
+            System.assert(true, 'An exception was expected');
+        } catch (Exception e) {
+            System.assert(false, 'Expected an SObjectTestDataBuilder.SObjectTestDataBuilderException, but got ' + e.getTypeName());
+        }
+    }
+
+    @IsTest
     private static void supportsRecursiveRelationshipsAcrossMultipleLevels() {
         Account grandParentAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType)
             .with(Account.Name, 'Grandparent')
@@ -190,9 +210,10 @@ private class IntegrationTests {
 
     @IsTest
     private static void kitchenSinkExample() {
-        // Entity Relationships:
+        // Relationships:
         // Order => Parents: Account, Pricebook2
-        // OrderItem => Parents: Order and
+        // OrderItem => Parents: Order, PricebookEntry
+        // PricebookEntry => Parents: Product2, Pricebook2
 
         SObjectTestDataBuilder.registerBuilder(PricebookEntry.SObjectType, IntegrationTests.PriceBookEntryBuilder.class);
         SObjectTestDataBuilder.registerBuilder(Order.SObjectType, IntegrationTests.OrderBuilder.class);

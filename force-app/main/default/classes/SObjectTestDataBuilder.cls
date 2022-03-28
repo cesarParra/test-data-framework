@@ -79,6 +79,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         uOW.commitWork();
     }
 
+    public static LateBinding lateBinding(SObjectType objectType) {
+        return new LateBinding(objectType);
+    }
+
     private static List<SObjectType> getSObjectTypesToRegisterToUnitOfWorkInOrder(List<LateBinding> allLateBindingsTemp) {
         List<SObjectType> workTypes = new List<SObjectType>();
         for (Integer i = allLateBindingsTemp.size() - 1; i >= 0; i--) {
@@ -297,6 +301,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
         public LateBinding(ITestDataBuilder builder) {
             this.builder = builder;
+        }
+
+        public LateBinding(SObjectType objectType) {
+            this.builder = SObjectTestDataBuilder.of(objectType);
         }
 
         public LateBinding setRelationshipField(SObjectField field) {
