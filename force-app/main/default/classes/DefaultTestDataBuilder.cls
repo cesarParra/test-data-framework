@@ -7,7 +7,7 @@ public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder 
         this.objectType = objectType;
     }
 
-    public ITestDataBuilder with(SObjectField field, Object value) {
+    public SObjectTestDataBuilder with(SObjectField field, Object value) {
         this.withData(field, value);
         return this;
     }
@@ -34,8 +34,6 @@ public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder 
         }
         return defaultValueMap;
     }
-
-    // TODO: Can we also default relationships using the bind?
 
     private Object resolveDefaultValue(DescribeFieldResult fieldResult) {
         if ((fieldResult.getType() == DisplayType.ID || fieldResult.getType() == DisplayType.REFERENCE)

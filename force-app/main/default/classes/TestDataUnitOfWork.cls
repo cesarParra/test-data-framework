@@ -1,6 +1,4 @@
 // TODO: Refactor to only use what is necessary
-// TODO: Rename
-// TODO: Make IsTest
 /**
  * Copyright (c), FinancialForce.com, inc
  * All rights reserved.
@@ -49,7 +47,7 @@
  *  - Honours dependency rules between records and updates dependent relationships automatically during the commit
  **/
 @IsTest
-public class fflib_SObjectUnitOfWork {
+public class TestDataUnitOfWork {
     /*
      * @description Unit of work has two ways of resolving registered relationships that require an update to resolve (e.g. parent
      * and child are same sobject type, or the parent is inserted after the child):
@@ -100,7 +98,7 @@ public class fflib_SObjectUnitOfWork {
      * @description Constructs a new UnitOfWork to support work against the given object list
      * @param sObjectTypes A list of objects given in dependency order (least dependent first)
      */
-    public fflib_SObjectUnitOfWork(List<Schema.SObjectType> sObjectTypes) {
+    public TestDataUnitOfWork(List<Schema.SObjectType> sObjectTypes) {
         this(sObjectTypes, new SimpleDML());
     }
 
@@ -112,7 +110,7 @@ public class fflib_SObjectUnitOfWork {
      *                                       post-insert to set the relationship. If IgnoreOutOfOrder then
      *                                       relationship will not be set.
      */
-    public fflib_SObjectUnitOfWork(List<Schema.SObjectType> sObjectTypes,
+    public TestDataUnitOfWork(List<Schema.SObjectType> sObjectTypes,
         UnresolvedRelationshipBehavior unresolvedRelationshipBehavior) {
         this(sObjectTypes, new SimpleDML(), unresolvedRelationshipBehavior);
     }
@@ -122,7 +120,7 @@ public class fflib_SObjectUnitOfWork {
      * @param sObjectTypes A list of objects given in dependency order (least dependent first)
      * @param dml Modify the database via this class
      */
-    public fflib_SObjectUnitOfWork(List<Schema.SObjectType> sObjectTypes, IDML dml) {
+    public TestDataUnitOfWork(List<Schema.SObjectType> sObjectTypes, IDML dml) {
         this(sObjectTypes, dml, DEFAULT_UNRESOLVED_RELATIONSHIP_BEHAVIOR);
     }
 
@@ -135,7 +133,7 @@ public class fflib_SObjectUnitOfWork {
      *                                       post-insert to set the relationship. If IgnoreOutOfOrder then relationship
      *                                       will not be set.
      */
-    public fflib_SObjectUnitOfWork(List<Schema.SObjectType> sObjectTypes, IDML dml,
+    public TestDataUnitOfWork(List<Schema.SObjectType> sObjectTypes, IDML dml,
         UnresolvedRelationshipBehavior unresolvedRelationshipBehavior) {
 
         m_unresolvedRelationshipBehaviour = unresolvedRelationshipBehavior;

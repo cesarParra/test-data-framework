@@ -11,6 +11,23 @@ private class IntegrationTests {
     }
 
     @IsTest
+    private static void canBeCalledMultipleTimes() {
+        Contact anyContact = (Contact)SObjectTestDataBuilder.of(Contact.SObjectType)
+            .with(Contact.LastName, 'Parra')
+            .registerNewForInsert();
+        SObjectTestDataBuilder.commitRecords();
+
+        Contact anotherContact = (Contact)SObjectTestDataBuilder.of(Contact.SObjectType)
+            .with(Contact.LastName, 'Garcia')
+            .registerNewForInsert();
+        SObjectTestDataBuilder.commitRecords();
+
+        System.assertNotEquals(null, anyContact?.Id, 'Expected a record returned.');
+
+        System.assertNotEquals(null, anotherContact?.Id, 'Expected a record returned.');
+    }
+
+    @IsTest
     private static void canCreateRecordsUsingCustomTestDataBuilderWhenItExists() {
         Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
@@ -169,15 +186,6 @@ private class IntegrationTests {
         System.assertNotEquals(null, childAccount.Id, 'Expected child parent to have been created.');
         System.assertEquals('Child', childAccount.Name, 'Expected the data to have been correctly set.');
         System.assertEquals(parentAccount.Id, childAccount.ParentId, 'Expected the relationship to have been correctly created.');
-    }
-
-    @IsTest
-    private static void defaultBuilderResolvesRelationships() {
-        PricebookEntry entry = (PricebookEntry)SObjectTestDataBuilder.of(PricebookEntry.SObjectType).registerNewForInsert();
-        SObjectTestDataBuilder.commitRecords();
-
-        System.assertNotEquals(null, entry.Product2Id);
-        System.assertNotEquals(null, entry.Pricebook2);
     }
 
     // TODO: This is getting out of control. Let's instead create our own data structure that is a bit simpler to get that

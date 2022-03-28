@@ -41,7 +41,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
     }
 
     public static void commitRecords() {
-        // TODO: Ensure that this can be called multiple times
         List<LateBinding> allLateBindings = new List<LateBinding>();
         while (allBindings.size() > 0) {
             // Using this technique because throughout this process the allBindings list could be modified
@@ -57,11 +56,11 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         }
 
         List<SObjectType> workTypes = getSObjectTypesToRegisterToUnitOfWorkInOrder(allLateBindings);
-        fflib_SObjectUnitOfWork uOW = new fflib_SObjectUnitOfWork(workTypes,
-            fflib_SObjectUnitOfWork.UnresolvedRelationshipBehavior.AttemptResolveOutOfOrder
+        TestDataUnitOfWork uOW = new TestDataUnitOfWork(workTypes,
+            TestDataUnitOfWork.UnresolvedRelationshipBehavior.AttemptResolveOutOfOrder
         );
 
-        for (HistoryItem item : testDataHistory.getAll()) {
+        for (HistoryItem item : testDataHistory.getAllNotInserted()) {
             uOW.registerNew(item.getRecord(), item.callback);
         }
 
@@ -184,7 +183,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
     private void registerChildren(List<SObject> insertedRecords) {
         for (SObject insertedRecord : insertedRecords) {
             for (ChildRelationship relationship : this.registeredRelationships) {
-                SObjectTestDataBuilder relationshipAsTestData = (SObjectTestDataBuilder)relationship.ChildBuilder; // TODO: Cleaner way of doing this?
+                SObjectTestDataBuilder relationshipAsTestData = (SObjectTestDataBuilder)relationship.ChildBuilder;
                 relationshipAsTestData.registerSObjects(1, relationship.RelationshipField, insertedRecord);
             }
         }
@@ -222,7 +221,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
                 try {
                     Type currentClassType = Type.forName(currentClass.NamespacePrefix, currentClass.Name);
                     Object currentClassInstance = currentClassType.newInstance();
-                    if (currentClassInstance instanceof ITestDataBuilder) {
+                    if (currentClassInstance instanceof ITestDataBuilder && currentClassInstance instanceof SObjectTestDataBuilder) {
                         ITestDataBuilder builderInstance = (ITestDataBuilder)currentClassInstance;
                         this.builderTypeBySObjectType.put(builderInstance.getSObjectType(), currentClassType);
                     }
@@ -270,10 +269,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
     }
 
     private class History {
-        Map<SObjectType, List<HistoryItem>> insertedRecordsByType;
+        Map<SObjectType, List<HistoryItem>> recordsByType;
 
         public History() {
-            this.insertedRecordsByType = new Map<SObjectType, List<HistoryItem>>();
+            this.recordsByType = new Map<SObjectType, List<HistoryItem>>();
         }
 
         public void log(List<SObject> insertedRecords, SObject parentRecord, SObjectField relationshipField,
@@ -285,7 +284,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         }
 
         public SObject getA(SObjectType objectType) {
-            List<HistoryItem> historiesForType = insertedRecordsByType.get(objectType);
+            List<HistoryItem> historiesForType = recordsByType.get(objectType);
             if (historiesForType != null) {
                 return historiesForType[0].getRecord();
             }
@@ -293,7 +292,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         }
 
         public Set<SObjectType> getSObjectTypes() {
-            return this.insertedRecordsByType.keySet();
+            return this.recordsByType.keySet();
         }
 
         public Boolean isEmpty() {
@@ -302,8 +301,20 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
         public List<HistoryItem> getAll() {
             List<HistoryItem> items = new List<HistoryItem>();
-            for (List<HistoryItem> currentItems : this.insertedRecordsByType.values()) {
+            for (List<HistoryItem> currentItems : this.recordsByType.values()) {
                 items.addAll(currentItems);
+            }
+            return items;
+        }
+
+        public List<HistoryItem> getAllNotInserted() {
+            List<HistoryItem> items = new List<HistoryItem>();
+            for (List<HistoryItem> currentItems : this.recordsByType.values()) {
+                for (HistoryItem currentItem : currentItems) {
+                    if (!currentItem.hasRecordBeingInserted()) {
+                        items.add(currentItem);
+                    }
+                }
             }
             return items;
         }
@@ -320,7 +331,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
         public List<SObject> getChildrenOfByType(Id recordId, SObjectType objectType) {
             List<SObject> children = new List<SObject>();
-            List<HistoryItem> itemsByType = this.insertedRecordsByType.get(objectType);
+            List<HistoryItem> itemsByType = this.recordsByType.get(objectType);
             if (itemsByType == null) {
                 // If no record of that type has been logged then there are no children.
                 return children;
@@ -334,12 +345,12 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         }
 
         private void log(HistoryItem item) {
-            List<HistoryItem> historiesByType = insertedRecordsByType.get(item.getRecord().getSObjectType());
+            List<HistoryItem> historiesByType = recordsByType.get(item.getRecord().getSObjectType());
             if (historiesByType == null) {
                 historiesByType = new List<HistoryItem>();
             }
             historiesByType.add(item);
-            insertedRecordsByType.put(item.getRecord().getSObjectType(), historiesByType);
+            recordsByType.put(item.getRecord().getSObjectType(), historiesByType);
         }
     }
 
@@ -371,6 +382,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
         public Boolean isParent() {
             return this.parentRecord == null;
+        }
+
+        public Boolean hasRecordBeingInserted() {
+            return this.record.Id != null;
         }
     }
 
