@@ -28,6 +28,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         return builder;
     }
 
+    public static void registerBuilder(SObjectType objectType , Type builderType) {
+        builderCache.register(objectType, builderType);
+    }
+
     public static SObject getAny(SObjectType objectType) {
         SObject previouslyInserted = testDataHistory.getA(objectType);
         if (previouslyInserted != null) {
@@ -42,9 +46,9 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
     public static void commitRecords() {
         List<LateBinding> allLateBindings = new List<LateBinding>();
+        // Using this technique because throughout this process the allBindings list could be modified
+        // if more parents need to be added up the chain when registerNewForInsert gets called.
         while (allBindings.size() > 0) {
-            // Using this technique because throughout this process the allBindings list could be modified
-            // if more parents need to be added up the chain when registerNewForInsert gets called.
             LateBinding binding = allBindings.remove(0);
             allLateBindings.add(binding);
             SObject parentRecord = binding.builder.registerNewForInsert();
@@ -96,15 +100,6 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
     public abstract SObjectType getSObjectType();
 
-    public List<SObject> createNew(Integer numberOfRecords) {
-        List<SObject> recordsToInsert = new List<SObject>();
-        for (Integer i = 0; i < numberOfRecords; i++) {
-            SObject recordToInsert = build();
-            recordsToInsert.add(recordToInsert);
-        }
-        return recordsToInsert;
-    }
-
     public SObjectTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
         this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
         return this;
@@ -122,6 +117,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         return this;
     }
 
+    protected virtual Map<SObjectField, Object> getDefaultValueMap() {
+        return new Map<SObjectField, Object>();
+    }
+
     protected SObject registerSObjectForInsert() {
         return this.registerSObjectsForInsert(1)[0];
     }
@@ -131,15 +130,67 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
     }
 
     protected List<SObject> registerSObjects(Integer numberOfRecordsToInsert, SObjectField parentRelationship, SObject relatedTo) {
-        List<SObject> recordsToInsert = createNew(numberOfRecordsToInsert);
-        testDataHistory.log(recordsToInsert, relatedTo, parentRelationship, this);
-        registerChildren(recordsToInsert);
+        List<SObject> recordsToRegister = createNew(numberOfRecordsToInsert);
+        testDataHistory.log(recordsToRegister, relatedTo, parentRelationship, this);
+        registerChildren(recordsToRegister);
+        lateBind(recordsToRegister);
         clear();
-        return recordsToInsert;
+        return recordsToRegister;
     }
 
-    protected virtual Map<SObjectField, Object> getDefaultValueMap() {
-        return new Map<SObjectField, Object>();
+    private void lateBind(List<SObject> registeredRecords) {
+        for (SObject currentRecord : registeredRecords) {
+            for (SObjectField defaultField : defaultValueMapCached.keySet()) {
+                if (!customValueMap.containsKey(defaultField)) {
+                    // Skip any field that has been overridden through the custom value map
+                    Object fieldValue = defaultValueMapCached.get(defaultField);
+                    if (checkIfBinding(fieldValue)) {
+                        attemptAddBinding((LateBinding)fieldValue, currentRecord, defaultField, false);
+                    }
+                }
+            }
+
+            for (SObjectField customField : customValueMap.keySet()) {
+                if (customValueMap.get(customField) != null) {
+                    Object fieldValue = customValueMap.get(customField);
+                    if (checkIfBinding(fieldValue)) {
+                        attemptAddBinding((LateBinding)fieldValue, currentRecord, customField, true);
+                    }
+                }
+            }
+        }
+    }
+
+    private void attemptAddBinding(LateBinding binding, SObject record, SObjectField relationshipField, Boolean throwErrorIfRegistered) {
+        for (HistoryItem item : testDataHistory.getAllNotInserted()) {
+            // If the record is already logged with a parent relationship to the same field, then we do not
+            // want to bind it.
+            // This can happen if the record was logged as part of a withChild call for its parent
+            if (item.getRecord() == record && item.getRelationshipField() == relationshipField) {
+                if (throwErrorIfRegistered) {
+                    String errorMessage = 'The record {0} is already registered to a parent through the field {1}. ' +
+                        'make sure to avoid registering a parent to a record that is being created through withChild for the same field';
+                    throw new SObjectTestDataBuilderException(String.format(errorMessage, new List<String> {
+                        String.valueOf(record),
+                        relationshipField.getDescribe().getName()
+                    }));
+                }
+                return;
+            }
+        }
+
+        binding.setRelationshipField(relationshipField);
+        binding.setChildRecord(record);
+        allBindings.add(binding);
+    }
+
+    private List<SObject> createNew(Integer numberOfRecords) {
+        List<SObject> recordsToInsert = new List<SObject>();
+        for (Integer i = 0; i < numberOfRecords; i++) {
+            SObject recordToInsert = build();
+            recordsToInsert.add(recordToInsert);
+        }
+        return recordsToInsert;
     }
 
     private SObject build() {
@@ -149,7 +200,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
             if (!customValueMap.containsKey(defaultField)) {
                 // Skip any field that has been overridden through the custom value map
                 Object fieldValue = defaultValueMapCached.get(defaultField);
-                if (checkIfBinding(fieldValue, instance, defaultField)) {
+                if (checkIfBinding(fieldValue)) {
                     continue;
                 }
                 instance.put(defaultField, fieldValue);
@@ -159,7 +210,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         for (SObjectField customField : customValueMap.keySet()) {
             if (customValueMap.get(customField) != null) {
                 Object fieldValue = customValueMap.get(customField);
-                if (checkIfBinding(fieldValue, instance, customField)) {
+                if (checkIfBinding(fieldValue)) {
                     continue;
                 }
                 instance.put(customField, fieldValue);
@@ -169,22 +220,18 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         return instance;
     }
 
-    private Boolean checkIfBinding(Object fieldValue, SObject record, SObjectField relationshipField) {
+    private Boolean checkIfBinding(Object fieldValue) {
         if (fieldValue instanceof LateBinding) {
-            LateBinding binding = (LateBinding)fieldValue;
-            binding.setRelationshipField(relationshipField);
-            binding.setChildRecord(record);
-            allBindings.add(binding);
             return true;
         }
         return false;
     }
 
-    private void registerChildren(List<SObject> insertedRecords) {
-        for (SObject insertedRecord : insertedRecords) {
+    private void registerChildren(List<SObject> records) {
+        for (SObject currentRecord : records) {
             for (ChildRelationship relationship : this.registeredRelationships) {
                 SObjectTestDataBuilder relationshipAsTestData = (SObjectTestDataBuilder)relationship.ChildBuilder;
-                relationshipAsTestData.registerSObjects(1, relationship.RelationshipField, insertedRecord);
+                relationshipAsTestData.registerSObjects(1, relationship.RelationshipField, currentRecord);
             }
         }
     }
@@ -201,6 +248,14 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         public TestDataBuilderCache() {
             this.initialized = false;
             this.builderTypeBySObjectType = new Map<SObjectType, Type>();
+        }
+
+        public void register(SObjectType objectType, Type classType) {
+            if (builderTypeBySObjectType.keySet().contains(objectType)) {
+                // If already registered, skip.
+                return;
+            }
+            this.builderTypeBySObjectType.put(objectType, classType);
         }
 
         public ITestDataBuilder getFor(SObjectType objectType) {
@@ -223,7 +278,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
                     Object currentClassInstance = currentClassType.newInstance();
                     if (currentClassInstance instanceof ITestDataBuilder && currentClassInstance instanceof SObjectTestDataBuilder) {
                         ITestDataBuilder builderInstance = (ITestDataBuilder)currentClassInstance;
-                        this.builderTypeBySObjectType.put(builderInstance.getSObjectType(), currentClassType);
+                        this.register(builderInstance.getSObjectType(), currentClassType);
                     }
                 } catch (Exception e) {
                     // An error might occur when creating the type. If it does we move on and don't add it to the cache.
@@ -349,6 +404,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
             if (historiesByType == null) {
                 historiesByType = new List<HistoryItem>();
             }
+
             historiesByType.add(item);
             recordsByType.put(item.getRecord().getSObjectType(), historiesByType);
         }

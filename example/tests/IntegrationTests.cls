@@ -188,32 +188,111 @@ private class IntegrationTests {
         System.assertEquals(parentAccount.Id, childAccount.ParentId, 'Expected the relationship to have been correctly created.');
     }
 
-    // TODO: This is getting out of control. Let's instead create our own data structure that is a bit simpler to get that
-    // to work first. Once we can get that to work then let's come back here and see if we can take care of this more
-    // complex structure. Let's use this as our kitchen sink example that everything can work, including even having
-    // defaulted relationships in custom TestDataBuilder implementations
-//    @IsTest
-//    private static void canCreateMultipleLevelsOfChildren() {
-//        Account anyAccount = new Account(Name = 'Test');
-//        insert anyAccount;
-//        Pricebook2 book = new Pricebook2();
-//        insert
-//        PricebookEntry entry = new PricebookEntry(UnitPrice = 100);
-//        insert entry;
-//
-//        ITestDataBuilder orderItemRecord = SObjectTestDataBuilder.of(OrderItem.SObjectType)
-//            .with(OrderItem.PricebookEntryId, entry.Id)
-//            .with(OrderItem.UnitPrice, 100);
-//        ITestDataBuilder productBuilder = SObjectTestDataBuilder.of(Product2.SObjectType)
-//            .withChild(orderItemRecord, OrderItem.Product2Id); // TODO: A way to now be able to get the generated record out of this
-//        Order orderRecord = (Order)SObjectTestDataBuilder.of(Order.SObjectType)
-//            .with(Order.AccountId, anyAccount.Id) // TODO: See how we can make this dynamic
-//            .with(Order.EffectiveDate, Date.today()) // TODO: Why did this not default? Answer: Because I commented out callbacks
-//            .with(Order.Status, 'Draft') // TODO: Why did this not default? Answer: Because I commented out. But still we want to be better about defaulting restricted picklists
-//            .withChild(orderItemRecord, OrderItem.OrderId)
-//            .insertNew();
-//        SObjectTestDataBuilder.commitRecords();
-//    }
+    @IsTest
+    private static void kitchenSinkExample() {
+        // Entity Relationships:
+        // Order => Parents: Account, Pricebook2
+        // OrderItem => Parents: Order and
 
-    // TODO: What happens when calling commit multiple times
+        SObjectTestDataBuilder.registerBuilder(PricebookEntry.SObjectType, IntegrationTests.PriceBookEntryBuilder.class);
+        SObjectTestDataBuilder.registerBuilder(Order.SObjectType, IntegrationTests.OrderBuilder.class);
+        SObjectTestDataBuilder.registerBuilder(OrderItem.SObjectType, IntegrationTests.OrderItemBuilder.class);
+
+        ITestDataBuilder orderItemRecord = SObjectTestDataBuilder.of(OrderItem.SObjectType)
+            .with(OrderItem.UnitPrice, 100.00)
+            .with(OrderItem.Quantity, 1);
+        Order orderRecord = (Order)SObjectTestDataBuilder.of(Order.SObjectType)
+            .withChild(orderItemRecord, OrderItem.OrderId)
+            .registerNewForInsert();
+        SObjectTestDataBuilder.commitRecords();
+
+        // Assert that the relationships were correctly created
+        System.assertNotEquals(null, orderRecord.Id);
+        OrderItem itemRecord = (OrderItem)SObjectTestDataBuilder.getChildrenOfTypeById(orderRecord.Id, OrderItem.SObjectType)[0];
+        System.assertNotEquals(null, itemRecord.Id);
+        System.assertEquals(orderRecord.Id, itemRecord.OrderId);
+
+        // Assert that the correct records were inserted to the database
+        List<Order> dbOrders = [SELECT Id, (SELECT Id FROM OrderItems) FROM Order];
+        System.assertEquals(1, dbOrders.size());
+        System.assertEquals(1, dbOrders[0].OrderItems.size());
+    }
+
+    public class PriceBookEntryBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
+        public override SObjectType getSObjectType() {
+            return PricebookEntry.SObjectType;
+        }
+
+        public PriceBookEntryBuilder with(SObjectField field, Object value) {
+            return (PriceBookEntryBuilder)withData(field, value);
+        }
+
+        public PricebookEntry registerNewForInsert() {
+            return (PricebookEntry) this.registerSObjectForInsert();
+        }
+
+        public List<PricebookEntry> registerNewForInsert(Integer numberOfRecords) {
+            return this.registerSObjectsForInsert(numberOfRecords);
+        }
+
+        protected override Map<SObjectField, Object> getDefaultValueMap() {
+            return new Map<SObjectField, Object> {
+                PricebookEntry.Product2Id => bindTo(SObjectTestDataBuilder.of(Product2.SObjectType)),
+                PricebookEntry.Pricebook2Id => Test.getStandardPricebookId(),
+                PricebookEntry.UnitPrice => 100
+            };
+        }
+    }
+
+    public class OrderBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
+        public override SObjectType getSObjectType() {
+            return Order.SObjectType;
+        }
+
+        public OrderBuilder with(SObjectField field, Object value) {
+            return (OrderBuilder)withData(field, value);
+        }
+
+        public Order registerNewForInsert() {
+            return (Order) this.registerSObjectForInsert();
+        }
+
+        public List<Order> registerNewForInsert(Integer numberOfRecords) {
+            return this.registerSObjectsForInsert(numberOfRecords);
+        }
+
+        protected override Map<SObjectField, Object> getDefaultValueMap() {
+            return new Map<SObjectField, Object> {
+              Order.Status => 'Draft',
+              Order.AccountId => bindTo(SObjectTestDataBuilder.of(Account.SObjectType)),
+              Order.EffectiveDate => Date.today(),
+              Order.Pricebook2Id => Test.getStandardPricebookId()
+            };
+        }
+    }
+
+    public class OrderItemBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
+        public override SObjectType getSObjectType() {
+            return OrderItem.SObjectType;
+        }
+
+        public OrderItemBuilder with(SObjectField field, Object value) {
+            return (OrderItemBuilder)withData(field, value);
+        }
+
+        public OrderItem registerNewForInsert() {
+            return (OrderItem) this.registerSObjectForInsert();
+        }
+
+        public List<OrderItem> registerNewForInsert(Integer numberOfRecords) {
+            return this.registerSObjectsForInsert(numberOfRecords);
+        }
+
+        protected override Map<SObjectField, Object> getDefaultValueMap() {
+            return new Map<SObjectField, Object> {
+                OrderItem.PricebookEntryId => bindTo(SObjectTestDataBuilder.of(PricebookEntry.SObjectType)),
+                OrderItem.OrderId => bindTo(SObjectTestDataBuilder.of(Order.SObjectType))
+            };
+        }
+    }
 }
