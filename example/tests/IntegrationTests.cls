@@ -6,6 +6,7 @@ private class IntegrationTests {
             .with(Contact.LastName, 'Parra')
             .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         System.assertNotEquals(null, anyContact?.Id, 'Expected a record returned.');
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected a single DML statement');
     }
@@ -23,7 +24,6 @@ private class IntegrationTests {
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, anyContact?.Id, 'Expected a record returned.');
-
         System.assertNotEquals(null, anotherContact?.Id, 'Expected a record returned.');
     }
 
@@ -31,6 +31,7 @@ private class IntegrationTests {
     private static void canCreateRecordsUsingCustomTestDataBuilderWhenItExists() {
         Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
         System.assertEquals('ACME', anyAccount.Name, 'Expected the default name specified in the builder class.');
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected a single DML statement');
@@ -40,14 +41,18 @@ private class IntegrationTests {
     private static void canCreateRecordsDirectlyThroughTheirBuilders() {
         Account anyAccount = new AccountTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected a single DML statement');
     }
 
     @IsTest
     private static void canCreateWithChildren() {
-        Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').registerNewForInsert();
+        Account anyAccount = new AccountTestDataBuilder()
+            .withChildContact('Parra')
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         Account insertedAccount = [SELECT Id, (SELECT Id FROM Contacts) FROM  Account WHERE Id = :anyAccount.Id];
         System.assertEquals(1, insertedAccount.Contacts.size(), 'Expected a contact to have been created for the account.');
         System.assertEquals(2, Limits.getDmlStatements(), 'Expected 2 DML statements, one for the parent and one for the child.');
@@ -57,8 +62,10 @@ private class IntegrationTests {
     private static void canCreateWithMultipleChildren() {
         Account anyAccount = new AccountTestDataBuilder()
             .withChildContact('Parra')
-            .withChildContact('Garcia').registerNewForInsert();
+            .withChildContact('Garcia')
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         Account insertedAccount = [SELECT Id, (SELECT Id FROM Contacts) FROM  Account WHERE Id = :anyAccount.Id];
         System.assertEquals(2, insertedAccount.Contacts.size(), 'Expected two child contacts.');
         System.assertEquals(2, Limits.getDmlStatements(), 'Expected 2 DML statements, one for all children.');
@@ -68,6 +75,7 @@ private class IntegrationTests {
     private static void canGetAnyRecordFromThePreviouslyCreated() {
         new AccountTestDataBuilder().registerNewForInsert(2);
         SObjectTestDataBuilder.commitRecords();
+
         System.assertEquals(1, Limits.getDmlStatements(), 'Expected the insertNew operation to have consumed a single DML statement.');
         Account anyAccount = (Account)SObjectTestDataBuilder.getAny(Account.SObjectType);
         System.assertNotEquals(null, anyAccount.Id, 'Expected an account.');
@@ -79,6 +87,7 @@ private class IntegrationTests {
     private static void canBetAnyWithoutHavingInsertedPreviously() {
         Account anyAccount = (Account)SObjectTestDataBuilder.getAny(Account.SObjectType);
         SObjectTestDataBuilder.commitRecords();
+
         System.assertNotEquals(null, anyAccount.Id, 'Expected an account.');
     }
 
@@ -86,6 +95,7 @@ private class IntegrationTests {
     private static void canGetTheChildrenCreatedThroughABuilder() {
         Account anyAccount = new AccountTestDataBuilder().withChildContact('Parra').registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
+
         List<Contact> accountChildren = SObjectTestDataBuilder.getChildrenOfTypeById(anyAccount.Id, Contact.SObjectType);
         System.assertEquals(1, accountChildren.size(), 'Expected a child returned.');
         System.assertEquals(anyAccount.Id, accountChildren[0].AccountId, 'Expected the parent correctly set.');
@@ -171,6 +181,7 @@ private class IntegrationTests {
                     with(OrderItem__c.Order__c, SObjectTestDataBuilder.lateBinding(Order__c.SObjectType)),
                 OrderItem__c.Order__c
             ).registerNewForInsert();
+
             System.assert(false, 'Expected an exception to have been thrown.');
         } catch (SObjectTestDataBuilder.SObjectTestDataBuilderException e) {
             System.assert(true, 'An exception was expected');
