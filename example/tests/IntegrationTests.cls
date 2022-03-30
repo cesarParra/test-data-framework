@@ -29,7 +29,10 @@ private class IntegrationTests {
 
     @IsTest
     private static void canCreateRecordsUsingCustomTestDataBuilderWhenItExists() {
-        Account anyAccount = (Account)SObjectTestDataBuilder.of(Account.SObjectType).registerNewForInsert();
+        Account anyAccount = new AccountTestDataBuilder()
+            .withName('ACME')
+            .withAddress('123 Street Name', 'San Francisco', 'CA', '90222', 'USA')
+            .registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 
         System.assertNotEquals(null, anyAccount?.Id, 'Expected a record returned.');

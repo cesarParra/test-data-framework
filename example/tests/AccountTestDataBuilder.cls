@@ -16,6 +16,18 @@ public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder 
         return this.registerSObjectsForInsert(numberOfRecords);
     }
 
+    public AccountTestDataBuilder withName(String name) {
+        return (AccountTestDataBuilder)this.withData(Account.Name, name);
+    }
+
+    public AccountTestDataBuilder withAddress(String street, String city, String state, String postalCode, String country) {
+        return (AccountTestDataBuilder)this.withData(Account.BillingStreet, street)
+            .withData(Account.BillingCity, city)
+            .withData(Account.BillingState, state)
+            .withData(Account.BillingPostalCode, postalCode)
+            .withData(Account.BillingCountry, country);
+    }
+
     public AccountTestDataBuilder withChildContact(String lastName) {
         this.withChild(
             SObjectTestDataBuilder.of(Contact.SObjectType).with(Contact.LastName, lastName),
