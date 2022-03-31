@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "docs:init": "docsify init docs",
+    "docs:serve": "docsify serve docs",
+    "docs:generate": "apexdocs-generate -s force-app -t docs --scope public -g docsify"
+  },
+  "devDependencies": {
+    "@cparra/apexdocs": "^2.1.0",
+    "docsify": "^4.12.2"
+  }
+}

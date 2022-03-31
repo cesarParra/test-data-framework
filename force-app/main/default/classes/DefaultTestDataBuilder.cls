@@ -1,5 +1,12 @@
+/**
+ * @description Base TestDataBuilder implementation that provides default dummy data. This class gets used as a fallback
+ *              for SObjectTypes for which a custom TestDataImplementation could not be found
+ * @see DefaultTestData
+ * @see SObjectTestDataBuilder
+ * @see ITestDataBuilder
+ */
 @IsTest
-public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder {
+public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
     private SObjectType objectType;
 
     public DefaultTestDataBuilder(SObjectType objectType) {
@@ -7,9 +14,13 @@ public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder 
         this.objectType = objectType;
     }
 
-    public SObjectTestDataBuilder with(SObjectField field, Object value) {
+    public DefaultTestDataBuilder with(SObjectField field, Object value) {
         this.withData(field, value);
         return this;
+    }
+
+    public DefaultTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+        return (DefaultTestDataBuilder)this.withChildData(childBuilder, relationshipField);
     }
 
     public SObject registerNewForInsert() {

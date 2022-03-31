@@ -1,3 +1,4 @@
+@IsTest
 public with sharing class OrderItemTestDataBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
     public override SObjectType getSObjectType() {
         return OrderItem__c.SObjectType;

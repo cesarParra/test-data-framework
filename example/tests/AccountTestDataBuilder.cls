@@ -1,3 +1,4 @@
+@IsTest
 public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder {
     public ITestDataBuilder with(SObjectField field, Object value) {
         this.withData(field, value);

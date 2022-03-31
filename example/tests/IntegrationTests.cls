@@ -135,7 +135,7 @@ private class IntegrationTests {
 
     @IsTest
     private static void supportsBuildersWithMultipleRelationshipBindings() {
-        // OrderItemTestDataBuilder is child of both Order and Product, and Order is in turn child of Account
+        // OrderItem__c is child of both Order__c and Product__c, and Order__c is in turn child of Account
         OrderItem__c itemRecord = (OrderItem__c)new OrderItemTestDataBuilder().registerNewForInsert();
         SObjectTestDataBuilder.commitRecords();
 

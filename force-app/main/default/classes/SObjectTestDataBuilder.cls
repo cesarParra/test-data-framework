@@ -1,4 +1,8 @@
-public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDataCallback.ITestDataCallback {
+/**
+ * @description Provides base functionality for building SObject records for testing purposes. Any custom TestDataBuilder
+ *              must extend this class as well as implement {@link ITestDataBuilder}.
+ */
+public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     private static History testDataHistory = new History();
     private static List<LateBinding> allBindings = new List<LateBinding>();
@@ -20,6 +24,11 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         registeredRelationships = new List<ChildRelationship>();
     }
 
+    /**
+     * @description Factory method that creates a new {@link ITestDataBuilder} for the provided SObjectType.
+     * @param objectType The SObjectType for which to create a {@link ITestDataBuilder} for.
+     * @return New {@link ITestDataBuilder} instance.
+     */
     public static ITestDataBuilder of(SObjectType objectType) {
         ITestDataBuilder builder = builderCache.getFor(objectType);
         if (builder == null) {
@@ -28,10 +37,26 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
         return builder;
     }
 
-    public static void registerBuilder(SObjectType objectType , Type builderType) {
+    /**
+     * @description Registers a custom TestDataBuilder for a specific SObjectType. The Type must be a class
+     *              that both extends SObjectTestDataBuilder and implements {@link ITestDataBuilder}.
+     *
+     *              Use this method to force the usage of your provided TestDataBuilder instead of letting the
+     *              `of` method automatically find a test data builder for it to use.
+     * @param objectType The SObjectType for the builder.
+     * @param builderType A class that both extends SObjectTestDataBuilder and implements {@link ITestDataBuilder}.
+     */
+    public static void registerBuilder(SObjectType objectType, Type builderType) {
         builderCache.register(objectType, builderType);
     }
 
+    /**
+     * @description Gets a record for the provided SObjectType. If a record has previously been created
+     *              for the provided SObjectType then it will be used, saving a trip to the database, otherwise
+     *              a new one will be created and the database will be called.
+     * @param objectType The SObjectType to get a record for.
+     * @return The SObject for the provided type.
+     */
     public static SObject getAny(SObjectType objectType) {
         SObject previouslyInserted = testDataHistory.getA(objectType);
         if (previouslyInserted != null) {
@@ -104,7 +129,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataBuilder, TestDa
 
     public abstract SObjectType getSObjectType();
 
-    public SObjectTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+    protected SObjectTestDataBuilder withChildData(ITestDataBuilder childBuilder, SObjectField relationshipField) {
         this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
         return this;
     }

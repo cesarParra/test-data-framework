@@ -1,3 +1,6 @@
+/**
+ * @description Provides default data for the {@link DefaultTestDataBuilder} class.
+ */
 @IsTest
 public with sharing class DefaultTestData {
     public static final Boolean DEFAULT_BOOLEAN = false;

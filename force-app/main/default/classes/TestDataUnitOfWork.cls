@@ -1,4 +1,3 @@
-// TODO: Refactor to only use what is necessary
 /**
  * Copyright (c), FinancialForce.com, inc
  * All rights reserved.
