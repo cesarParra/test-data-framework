@@ -2,7 +2,7 @@
  * @description Provides base functionality for building SObject records for testing purposes. Any custom TestDataBuilder
  *              must extend this class as well as implement {@link ITestDataBuilder}.
  */
-public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDataCallback {
+public abstract class SObjectTestDataBuilder implements ITestDataCallback.ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     private static History testDataHistory = new History();
     private static List<LateBinding> allBindings = new List<LateBinding>();
@@ -19,6 +19,9 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         set;
     }
 
+    /**
+     * @description Constructs a new SObjectTestDataBuilder.
+     */
     public SObjectTestDataBuilder() {
         customValueMap = new Map<SObjectField, Object>();
         registeredRelationships = new List<ChildRelationship>();
@@ -65,10 +68,20 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         return of(objectType).registerNewForInsert();
     }
 
+    /**
+     * @description Returns any children record that might have been created through a `withChild` call
+     *              for the specified record Id.
+     * @param recordId The Id of the parent record.
+     * @param objectType The SObjectType for the children.
+     * @return A list with the children records.
+     */
     public static List<SObject> getChildrenOfTypeById(Id recordId, SObjectType objectType) {
         return testDataHistory.getChildrenOfByType(recordId, objectType);
     }
 
+    /**
+     * @description Commits all registered records to the database.
+     */
     public static void commitRecords() {
         List<LateBinding> allLateBindings = new List<LateBinding>();
         // Using this technique because throughout this process the allBindings list could be modified
@@ -104,9 +117,20 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         uOW.commitWork();
     }
 
+    /**
+     * @description Returns a new LateBinding instance of the specified SObjectType.
+     * @param objectType The SObjectType for the LateBinding instance.
+     * @return New LateBinding instance.
+     */
     public static LateBinding lateBinding(SObjectType objectType) {
         return new LateBinding(objectType);
     }
+
+    /**
+     * @description Returns the SObjectType for this builder.
+     * @return The SObjectType for this builder.
+     */
+    public abstract SObjectType getSObjectType();
 
     private static List<SObjectType> getSObjectTypesToRegisterToUnitOfWorkInOrder(List<LateBinding> allLateBindingsTemp) {
         List<SObjectType> workTypes = new List<SObjectType>();
@@ -127,14 +151,23 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         return workTypes;
     }
 
-    public abstract SObjectType getSObjectType();
-
     protected SObjectTestDataBuilder withChildData(ITestDataBuilder childBuilder, SObjectField relationshipField) {
         this.registeredRelationships.add(new ChildRelationship(childBuilder, relationshipField));
         return this;
     }
 
+    /**
+     * @description Override this method if you want any logic to be executed before inserting the SObject
+     *              for this builder into the database.
+     * @param record The SObject that will be inserted into the database.
+     */
     public virtual void beforeInsert(SObject record) {}
+
+    /**
+     * @description Override this method if you want any logic to be executed after inserting the SObject
+     *              for this builder into the database.
+     * @param record The SObject that will be inserted into the database.
+     */
     public virtual void afterInsert(SObject record) {}
 
     protected LateBinding bindTo(ITestDataBuilder builder) {
@@ -364,7 +397,7 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         }
 
         public void log(List<SObject> insertedRecords, SObject parentRecord, SObjectField relationshipField,
-            TestDataCallback.ITestDataCallback callback) {
+            ITestDataCallback.ITestDataCallback callback) {
             for (SObject insertedRecord : insertedRecords) {
                 HistoryItem item = new HistoryItem(insertedRecord, parentRecord, relationshipField, callback);
                 log(item);
@@ -447,10 +480,10 @@ public abstract class SObjectTestDataBuilder implements TestDataCallback.ITestDa
         private SObject record;
         private SObject parentRecord;
         private SObjectField relationshipToParent;
-        private TestDataCallback.ITestDataCallback callback;
+        private ITestDataCallback.ITestDataCallback callback;
 
         public HistoryItem(SObject record, SObject parentRecord, SObjectField relationshipField,
-            TestDataCallback.ITestDataCallback callback) {
+            ITestDataCallback.ITestDataCallback callback) {
             this.record = record;
             this.parentRecord = parentRecord;
             this.relationshipToParent = relationshipField;

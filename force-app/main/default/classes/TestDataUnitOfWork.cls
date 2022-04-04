@@ -47,7 +47,7 @@
  **/
 @IsTest
 public class TestDataUnitOfWork {
-    /*
+    /**
      * @description Unit of work has two ways of resolving registered relationships that require an update to resolve (e.g. parent
      * and child are same sobject type, or the parent is inserted after the child):
      *
@@ -66,9 +66,9 @@ public class TestDataUnitOfWork {
 
     private class NewSObjectAndCallback {
         public SObject Record { get; private set; }
-        public TestDataCallback.ITestDataCallback Callback { get; set; }
+        public ITestDataCallback.ITestDataCallback Callback { get; set; }
 
-        public NewSObjectAndCallback(SObject record, TestDataCallback.ITestDataCallback callback) {
+        public NewSObjectAndCallback(SObject record, ITestDataCallback.ITestDataCallback callback) {
             this.Record = record;
             this.Callback = callback;
         }
@@ -172,7 +172,7 @@ public class TestDataUnitOfWork {
      * @param record A newly created SObject instance to be inserted during commitWork
      * @param callback TestDataCallback.ITestDataCallback to be called before and after record insert.
      **/
-    public void registerNew(SObject record, TestDataCallback.ITestDataCallback callback) {
+    public void registerNew(SObject record, ITestDataCallback.ITestDataCallback callback) {
         if (record.Id != null) {
             throw new UnitOfWorkException('Only new records can be registered as new');
         }

@@ -9,28 +9,60 @@
 public with sharing class DefaultTestDataBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
     private SObjectType objectType;
 
+    /**
+     * @description Constructs a new DefaultTestDataBuilder.
+     * @param objectType The SObjectType for this builder.
+     */
     public DefaultTestDataBuilder(SObjectType objectType) {
         super();
         this.objectType = objectType;
     }
 
+    /**
+     * @description Sets the value for the field specified by the SObjectField.
+     * @param field The SObjectField to set the value for.
+     * @param value The value to set.
+     * @return Updated DefaultTestDataBuilder instance.
+     */
     public DefaultTestDataBuilder with(SObjectField field, Object value) {
         this.withData(field, value);
         return this;
     }
 
+    /**
+     * @description Registers a child to be inserted for the SObject that will be built by this builder.
+     * @param childBuilder An {@link ITestDataBuilder} instance that represents the child that will be related to this
+     *                     record.
+     * @param relationshipField The SObjectField that represents how the 2 SObjectTypes are related.
+     * @return Updated DefaultTestDataBuilder instance.
+     */
     public DefaultTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
         return (DefaultTestDataBuilder)this.withChildData(childBuilder, relationshipField);
     }
 
+    /**
+     * @description Registers this record for insertion into the database once `SObjectTestDataBuilder.commitRecords()`
+     *              is called.
+     * @return The record that will be inserted into the database.
+     */
     public SObject registerNewForInsert() {
         return this.registerSObjectForInsert();
     }
 
+    /**
+     * @description Registers records in bulk to be inserted into the database by this builder once
+     *              `SObjectTestDataBuilder.commitRecords()` is called.
+     * @param numberOfRecords The number of records to insert.
+     * @return The records that will be inserted into the database.
+     */
     public List<SObject> registerNewForInsert(Integer numberOfRecords) {
         return this.registerSObjectsForInsert(numberOfRecords);
     }
 
+    /**
+     * @description Returns the SObjectType for this builder.
+     * @return The SObjectType for this builder.
+     */
     public override SObjectType getSObjectType() {
         return this.objectType;
     }
