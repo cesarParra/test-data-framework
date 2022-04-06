@@ -132,21 +132,6 @@ Override this method if you want any logic to be executed after inserting the SO
 |---|---|
 |`record`|The SObject that will be inserted into the database.|
 
-### `getA(SObjectType objectType)`
-#### Parameters
-|Param|Description|
-|---|---|
-
-### `getSObjectTypes()`
-### `isEmpty()`
-### `getAll()`
-### `getAllNotInserted()`
-### `getAllChildren()`
-### `getChildrenOfByType(Id recordId, SObjectType objectType)`
-#### Parameters
-|Param|Description|
-|---|---|
-
 ---
 ## Classes
 ### LateBinding

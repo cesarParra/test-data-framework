@@ -1,50 +1,3 @@
-/**
- * Copyright (c), FinancialForce.com, inc
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- *   are permitted provided that the following conditions are met:
- *
- * - Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- * - Neither the name of the FinancialForce.com, inc nor the names of its contributors
- *      may be used to endorse or promote products derived from this software without
- *      specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- *  THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- *  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**/
-
-/**
- * @description Provides an implementation of the Enterprise Application Architecture Unit Of Work, as defined by Martin Fowler
- *   http://martinfowler.com/eaaCatalog/unitOfWork.html
- *
- * "When you're pulling data in and out of a database, it's important to keep track of what you've changed; otherwise,
- *  that data won't be written back into the database. Similarly you have to insert new objects you create and
- *  remove any objects you delete."
- *
- * "You can change the database with each change to your object model, but this can lead to lots of very small database calls,
- *  which ends up being very slow. Furthermore it requires you to have a transaction open for the whole interaction, which is
- *  impractical if you have a business transaction that spans multiple requests. The situation is even worse if you need to
- *  keep track of the objects you've read so you can avoid inconsistent reads."
- *
- * "A Unit of Work keeps track of everything you do during a business transaction that can affect the database. When you're done,
- *  it figures out everything that needs to be done to alter the database as a result of your work."
- *
- * In an Apex context this pattern provides the following specific benefits
- *  - Applies bulkification to DML operations, insert, update and delete
- *  - Manages a business transaction around the work and ensures a rollback occurs (even when exceptions are later handled by the caller)
- *  - Honours dependency rules between records and updates dependent relationships automatically during the commit
- **/
 @IsTest
 public class TestDataUnitOfWork {
     /**
@@ -276,8 +229,7 @@ public class TestDataUnitOfWork {
             m_unresolvedRelationshipBehaviour = unresolvedRelationshipBehaviour;
         }
 
-        public void resolve()
-        {
+        public void resolve() {
             // Resolve relationships
             for (IRelationship relationship : m_relationships)
             {
@@ -296,8 +248,7 @@ public class TestDataUnitOfWork {
         /**
          * @return true if there are unresolved relationships
          */
-        public Boolean hasParentInsertedAfterChild()
-        {
+        public Boolean hasParentInsertedAfterChild() {
             return !m_parentInsertedAfterChildRelationships.isEmpty();
         }
 
@@ -308,8 +259,7 @@ public class TestDataUnitOfWork {
          * @throws UnitOfWorkException if the parent still does not have an ID - can occur if parent is not registered
          */
         public List<SObject> resolveParentInsertedAfterChild() {
-            for (RelationshipPermittingOutOfOrderInsert relationship : m_parentInsertedAfterChildRelationships)
-            {
+            for (RelationshipPermittingOutOfOrderInsert relationship : m_parentInsertedAfterChildRelationships) {
                 relationship.resolve();
                 if (!relationship.Resolved)
                 {
@@ -324,8 +274,7 @@ public class TestDataUnitOfWork {
          * @description Call after calling resolveParentInsertedAfterChild()
          * @return The child records to update in order to set the lookups
          */
-        private List<SObject> getChildRecordsWithParentInsertedAfter()
-        {
+        private List<SObject> getChildRecordsWithParentInsertedAfter() {
             // Get rid of dupes
             Map<Id, SObject> recordsToUpdate = new Map<Id, SObject>();
             for (RelationshipPermittingOutOfOrderInsert relationship : m_parentInsertedAfterChildRelationships)
@@ -341,8 +290,7 @@ public class TestDataUnitOfWork {
             return recordsToUpdate.values();
         }
 
-        public void add(SObject record, Schema.SObjectField relatedToField, SObject relatedTo)
-        {
+        public void add(SObject record, Schema.SObjectField relatedToField, SObject relatedTo) {
             // Relationship to resolve
             if (m_unresolvedRelationshipBehaviour == UnresolvedRelationshipBehavior.IgnoreOutOfOrder)
             {

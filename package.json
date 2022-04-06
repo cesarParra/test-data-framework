@@ -5,7 +5,7 @@
     "docs:generate": "apexdocs-generate -s force-app -t docs --scope public -g docsify"
   },
   "devDependencies": {
-    "@cparra/apexdocs": "^2.1.1",
+    "@cparra/apexdocs": "^2.1.3",
     "docsify": "^4.12.2"
   }
 }
