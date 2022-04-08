@@ -15,7 +15,7 @@
 
 <br />
 
-## About
+## 💡 About
 
 The Salesforce Test Data Framework allows you to intuitively create Salesforce SObject data for your
 unit tests using a fluent language. 
@@ -23,9 +23,9 @@ unit tests using a fluent language.
 It provides base support for any SObject, standard or custom, out of the box, but allows you
 to adapt it to your custom needs.
 
-## 	Getting Started
+## 🏁 Getting Started
 
-### Deploying
+### 🏃 Deploying
 
 To deploy clone or download this repo and push the contents of `force-app/main/default/classes` to your org.
 
@@ -173,23 +173,22 @@ You can do that by using the `SObjectTestDataBuilder.registerBuilder` method:
 SObjectTestDataBuilder.registerBuilder(Order.SObjectType, CustomOrderBuilder.class);
 ```
 
-
-### Tests
+### 🧪 Tests
 
 This repo provides the `IntegrationTests` class with examples of all functionality provided by the framework. The
 `kitchenSinkExample` provides an example of a complex hierarchy of objects.
 
-## Roadmap
+## 🚧 Roadmap
 
 * [ ] Release as unmanaged package
 * [ ] In-memory support
 
 
-## Contributing
+## 🤝Contributing
 
 Contributions are always welcome!
 
 
-## License
+## ⚖️License
 
 Distributed under the MIT License. See LICENSE file for more information.
