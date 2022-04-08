@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Salesforce Test Data Framework</h1>
+  <h1>Salesforce Test Data Builder</h1>
   <p>
     Easy and intuitive way to create Salesforce unit test data.
   </p>
@@ -17,7 +17,7 @@
 
 ## 💡 About
 
-The Salesforce Test Data Framework allows you to intuitively create Salesforce SObject data for your
+The Salesforce Test Data Builder framework allows you to intuitively create Salesforce SObject data for your
 unit tests using a fluent language. 
 
 It provides base support for any SObject, standard or custom, out of the box, but allows you
