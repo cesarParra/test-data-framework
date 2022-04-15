@@ -16,6 +16,10 @@ public with sharing class OrderTestDataBuilder extends SObjectTestDataBuilder im
         return this.registerSObjectsForInsert(numberOfRecords);
     }
 
+    public OrderTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+        return (OrderTestDataBuilder)this.withChildData(childBuilder, relationshipField);
+    }
+
     protected override Map<SObjectField, Object> getDefaultValueMap() {
         return new Map<SObjectField, Object> {
             Order__c.Customer__c => bindTo(SObjectTestDataBuilder.of(Account.SObjectType))

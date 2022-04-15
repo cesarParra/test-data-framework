@@ -270,6 +270,10 @@ private class IntegrationTests {
             return this.registerSObjectsForInsert(numberOfRecords);
         }
 
+        public PriceBookEntryBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+            return (PriceBookEntryBuilder)this.withChildData(childBuilder, relationshipField);
+        }
+
         protected override Map<SObjectField, Object> getDefaultValueMap() {
             return new Map<SObjectField, Object> {
                 PricebookEntry.Product2Id => bindTo(SObjectTestDataBuilder.of(Product2.SObjectType)),
@@ -294,6 +298,10 @@ private class IntegrationTests {
 
         public List<Order> registerNewForInsert(Integer numberOfRecords) {
             return this.registerSObjectsForInsert(numberOfRecords);
+        }
+
+        public OrderBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+            return (OrderBuilder)this.withChildData(childBuilder, relationshipField);
         }
 
         protected override Map<SObjectField, Object> getDefaultValueMap() {
@@ -321,6 +329,10 @@ private class IntegrationTests {
 
         public List<OrderItem> registerNewForInsert(Integer numberOfRecords) {
             return this.registerSObjectsForInsert(numberOfRecords);
+        }
+
+        public OrderItemBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+            return (OrderItemBuilder)this.withChildData(childBuilder, relationshipField);
         }
 
         protected override Map<SObjectField, Object> getDefaultValueMap() {

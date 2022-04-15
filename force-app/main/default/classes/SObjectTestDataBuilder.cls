@@ -2,7 +2,7 @@
  * @description Provides base functionality for building SObject records for testing purposes. Any custom TestDataBuilder
  *              must extend this class as well as implement {@link ITestDataBuilder}.
  */
-public abstract class SObjectTestDataBuilder implements ITestDataCallback.ITestDataCallback {
+public abstract class SObjectTestDataBuilder implements ITestDataCallback {
     private static TestDataBuilderCache builderCache = new TestDataBuilderCache();
     private static History testDataHistory = new History();
     private static List<LateBinding> allBindings = new List<LateBinding>();
@@ -397,7 +397,7 @@ public abstract class SObjectTestDataBuilder implements ITestDataCallback.ITestD
         }
 
         public void log(List<SObject> insertedRecords, SObject parentRecord, SObjectField relationshipField,
-            ITestDataCallback.ITestDataCallback callback) {
+            ITestDataCallback callback) {
             for (SObject insertedRecord : insertedRecords) {
                 HistoryItem item = new HistoryItem(insertedRecord, parentRecord, relationshipField, callback);
                 log(item);
@@ -480,10 +480,10 @@ public abstract class SObjectTestDataBuilder implements ITestDataCallback.ITestD
         private SObject record;
         private SObject parentRecord;
         private SObjectField relationshipToParent;
-        private ITestDataCallback.ITestDataCallback callback;
+        private ITestDataCallback callback;
 
         public HistoryItem(SObject record, SObject parentRecord, SObjectField relationshipField,
-            ITestDataCallback.ITestDataCallback callback) {
+            ITestDataCallback callback) {
             this.record = record;
             this.parentRecord = parentRecord;
             this.relationshipToParent = relationshipField;

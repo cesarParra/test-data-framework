@@ -1,5 +1,5 @@
 @IsTest
-public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder {
+public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder implements ITestDataBuilder {
     public ITestDataBuilder with(SObjectField field, Object value) {
         this.withData(field, value);
         return this;
@@ -35,6 +35,10 @@ public with sharing class AccountTestDataBuilder extends SObjectTestDataBuilder 
             Contact.AccountId
         );
         return this;
+    }
+
+    public AccountTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+        return (AccountTestDataBuilder)this.withChildData(childBuilder, relationshipField);
     }
 
     protected override Map<SObjectField, Object> getDefaultValueMap() {

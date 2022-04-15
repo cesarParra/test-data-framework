@@ -1,16 +1,22 @@
 {
-  "packageDirectories": [
-    {
-      "path": "force-app",
-      "default": true
-    },
-    {
-      "path": "example",
-      "default": false
+    "packageDirectories": [
+        {
+            "path": "force-app",
+            "default": true,
+            "package": "TestDataBuilder",
+            "versionName": "ver 0.1",
+            "versionNumber": "0.1.0.NEXT"
+        },
+        {
+            "path": "example",
+            "default": false
+        }
+    ],
+    "name": "test-data-framework",
+    "namespace": "",
+    "sfdcLoginUrl": "https://login.salesforce.com",
+    "sourceApiVersion": "54.0",
+    "packageAliases": {
+        "TestDataBuilder": "0Ho5w0000008OULCA2"
     }
-  ],
-  "name": "test-data-framework",
-  "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "54.0"
 }

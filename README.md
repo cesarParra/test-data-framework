@@ -125,7 +125,9 @@ also allows you to create custom builders for different SObjectTypes.
 
 To create a custom builder you will need to **both** extend `SObjectTestDataBuilder` and implement `ITestDataBuilder`.
 For the framework to automatically detect your custom builder it also **needs* to have a name that ends in `TestDataBuilder` 
-(though there is a way to explicitly specify the builder to the framework, explained below):
+(though there is a way to explicitly specify the builder to the framework, explained below).
+
+Any custom builder should start with some boilerplate code that looks as follows:
 
 ```apex
 @IsTest
@@ -144,6 +146,10 @@ public with sharing class OrderTestDataBuilder extends SObjectTestDataBuilder im
 
   public List<SObject> registerNewForInsert(Integer numberOfRecords) {
     return this.registerSObjectsForInsert(numberOfRecords);
+  }
+
+  public OrderTestDataBuilder withChild(ITestDataBuilder childBuilder, SObjectField relationshipField) {
+    return (OrderTestDataBuilder)this.withChildData(childBuilder, relationshipField);
   }
 
   protected override Map<SObjectField, Object> getDefaultValueMap() {

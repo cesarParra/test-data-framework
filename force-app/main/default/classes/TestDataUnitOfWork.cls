@@ -67,9 +67,9 @@ public class TestDataUnitOfWork {
 
     private class NewSObjectAndCallback {
         public SObject Record { get; private set; }
-        public ITestDataCallback.ITestDataCallback Callback { get; set; }
+        public ITestDataCallback Callback { get; set; }
 
-        public NewSObjectAndCallback(SObject record, ITestDataCallback.ITestDataCallback callback) {
+        public NewSObjectAndCallback(SObject record, ITestDataCallback callback) {
             this.Record = record;
             this.Callback = callback;
         }
@@ -173,7 +173,7 @@ public class TestDataUnitOfWork {
      * @param record A newly created SObject instance to be inserted during commitWork
      * @param callback TestDataCallback.ITestDataCallback to be called before and after record insert.
      **/
-    public void registerNew(SObject record, ITestDataCallback.ITestDataCallback callback) {
+    public void registerNew(SObject record, ITestDataCallback callback) {
         if (record.Id != null) {
             throw new UnitOfWorkException('Only new records can be registered as new');
         }
